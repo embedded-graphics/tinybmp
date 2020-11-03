@@ -1,0 +1,32 @@
+[package]
+name = "tinybmp"
+description = "No-std, low memory footprint BMP image loader"
+version = "0.2.3"
+authors = ["James Waples <james@wapl.es>"]
+edition = "2018"
+repository = "https://github.com/embedded-graphics/embedded-graphics/tree/master/tinybmp"
+documentation = "https://docs.rs/tinybmp"
+categories = ["embedded", "no-std"]
+keywords = ["graphics", "embedded", "bmp", "bitmap", "image"]
+readme = "./README.md"
+license = "MIT OR Apache-2.0"
+exclude = [
+    ".travis.yml",
+    ".gitignore",
+]
+
+[badges]
+circle-ci = { repository = "embedded-graphics/embedded-graphics", branch = "master" }
+
+[[test]]
+name = "embedded_graphics"
+
+[dependencies.nom]
+version = "5.1.0"
+default-features = false
+
+[dependencies.embedded-graphics]
+# version = "=0.7.0-alpha.1"
+# TODO: Remove when a new e-g alpha is released
+git = "https://github.com/embedded-graphics/embedded-graphics"
+branch = "new-repo"
