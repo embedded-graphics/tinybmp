@@ -16,7 +16,7 @@ exclude = [
 ]
 
 [badges]
-circle-ci = { repository = "embedded-graphics/embedded-graphics", branch = "master" }
+circle-ci = { repository = "embedded-graphics/tinybmp", branch = "master" }
 
 [[test]]
 name = "embedded_graphics"
