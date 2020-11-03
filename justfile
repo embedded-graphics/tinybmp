@@ -30,14 +30,8 @@ check-formatting:
 
 # Cross compiles embedded-graphics, tinytga and tinybmp for a target
 build-target target *args:
-    cargo build -p embedded-graphics --target {{target}} {{args}}
-    cd embedded-graphics; cargo build -p embedded-graphics --target {{target}} --all-features {{args}}
-
-    cargo build -p tinytga --target {{target}} {{args}}
-    cargo build -p tinytga --target {{target}} --all-features {{args}}
-
-    cargo build -p tinybmp --target {{target}} {{args}}
-    cargo build -p tinybmp --target {{target}} --all-features {{args}}
+    cargo build --target {{target}} {{args}}
+    cargo build --target {{target}} --all-features {{args}}
 
 # Cross compiles embedded-graphics, tinytga and tinybmp for all targets
 build-targets *args:
