@@ -98,7 +98,7 @@
 
 <!-- next-url -->
 
-[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/v0.2.3...HEAD
+[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/after-split...HEAD
 [unreleased - `embedded-graphics` repository]: https://github.com/embedded-graphics/embedded-graphics/compare/tinybmp-v0.2.3...before-split
 [0.2.3]: https://github.com/embedded-graphics/embedded-graphics/compare/tinybmp-v0.2.2...tinybmp-v0.2.3
 [0.2.2]: https://github.com/embedded-graphics/embedded-graphics/compare/tinybmp-v0.2.0...tinybmp-v0.2.2
