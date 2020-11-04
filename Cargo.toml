@@ -11,7 +11,8 @@ keywords = ["graphics", "embedded-graphics", "bmp", "bitmap", "image"]
 readme = "./README.md"
 license = "MIT OR Apache-2.0"
 exclude = [
-    ".travis.yml",
+    "/.github/",
+    "/.circleci/",
     ".gitignore",
 ]
 
