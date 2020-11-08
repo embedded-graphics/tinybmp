@@ -30,4 +30,3 @@ default-features = false
 # version = "=0.7.0-alpha.1"
 # TODO: Remove when a new e-g alpha is released
 git = "https://github.com/embedded-graphics/embedded-graphics"
-branch = "new-repo"
