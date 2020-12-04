@@ -24,7 +24,7 @@ name = "embedded_graphics"
 
 [dependencies]
 embedded-graphics-core = "0.1.0"
-nom = { version = "5.1.0", default-features = false }
+nom = { version = "6.0.1", default-features = false }
 
 [dev-dependencies]
 embedded-graphics = "0.7.0-alpha.2"
