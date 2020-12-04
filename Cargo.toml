@@ -22,11 +22,9 @@ circle-ci = { repository = "embedded-graphics/tinybmp", branch = "master" }
 [[test]]
 name = "embedded_graphics"
 
-[dependencies.nom]
-version = "5.1.0"
-default-features = false
+[dependencies]
+embedded-graphics-core = "0.1.0"
+nom = { version = "5.1.0", default-features = false }
 
-[dependencies.embedded-graphics]
-# version = "=0.7.0-alpha.1"
-# TODO: Remove when a new e-g alpha is released
-git = "https://github.com/embedded-graphics/embedded-graphics"
+[dev-dependencies]
+embedded-graphics = "0.7.0-alpha.2"

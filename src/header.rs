@@ -3,7 +3,7 @@
 //! Information gleaned from [wikipedia](https://en.wikipedia.org/wiki/BMP_file_format) and
 //! [this website](http://paulbourke.net/dataformats/bmp/)
 
-use embedded_graphics::prelude::*;
+use embedded_graphics_core::prelude::*;
 use nom::{
     bytes::complete::tag,
     combinator::map_opt,
