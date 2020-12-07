@@ -23,7 +23,7 @@ circle-ci = { repository = "embedded-graphics/tinybmp", branch = "master" }
 name = "embedded_graphics"
 
 [dependencies]
-embedded-graphics-core = "0.1.0"
+embedded-graphics-core = "0.1.1"
 nom = { version = "6.0.1", default-features = false }
 
 [dev-dependencies]

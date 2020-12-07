@@ -116,7 +116,7 @@ mod raw_bmp;
 mod raw_pixels;
 
 use core::marker::PhantomData;
-use embedded_graphics_core::{image::ImageDrawable, prelude::*};
+use embedded_graphics_core::prelude::*;
 
 pub use crate::{
     dynamic_bmp::DynamicBmp,
