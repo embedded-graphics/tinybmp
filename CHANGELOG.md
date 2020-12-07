@@ -6,6 +6,10 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+- **(breaking)** [#3](https://github.com/embedded-graphics/tinybmp/pull/3) `tinybmp` now depends on `embedded-graphics-core` instead of `embedded-graphics`.
+
 ## [Unreleased - `embedded-graphics` repository] - ReleaseDate
 
 > Note: PR numbers from this point onwards are from the old `embedded-graphics/embedded-graphics` repository. New PR numbers above this note refer to PRs in the `embedded-graphics/tinybmp` repository.

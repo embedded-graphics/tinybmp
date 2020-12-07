@@ -1,4 +1,4 @@
-use embedded_graphics::prelude::*;
+use embedded_graphics_core::prelude::*;
 use tinybmp::{Bpp, Header, RawBmp};
 
 const DATA: &[u8] = include_bytes!("./chessboard-8px-24bit.bmp");

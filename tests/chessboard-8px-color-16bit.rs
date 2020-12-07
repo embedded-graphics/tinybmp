@@ -1,4 +1,4 @@
-use embedded_graphics::prelude::*;
+use embedded_graphics_core::prelude::*;
 use tinybmp::{Bpp, ChannelMasks, Header, RawBmp};
 
 #[test]
