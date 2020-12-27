@@ -6,11 +6,13 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [0.3.0-alpha.1] - 2020-12-27
+
 ### Changed
 
 - **(breaking)** [#3](https://github.com/embedded-graphics/tinybmp/pull/3) `tinybmp` now depends on `embedded-graphics-core` instead of `embedded-graphics`.
 
-## [Unreleased - `embedded-graphics` repository] - ReleaseDate
+## [0.3.0-alpha.1 - `embedded-graphics` repository] - 2020-12-27
 
 > Note: PR numbers from this point onwards are from the old `embedded-graphics/embedded-graphics` repository. New PR numbers above this note refer to PRs in the `embedded-graphics/tinybmp` repository.
 
@@ -101,9 +103,10 @@
 - Release `tinybmp` crate to crates.io
 
 <!-- next-url -->
+[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.0-alpha.1...HEAD
 
-[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/after-split...HEAD
-[unreleased - `embedded-graphics` repository]: https://github.com/embedded-graphics/embedded-graphics/compare/tinybmp-v0.2.3...before-split
+[0.3.0-alpha.1]: https://github.com/embedded-graphics/tinybmp/compare/after-split...v0.3.0-alpha.1
+[0.3.0-alpha.1 - `embedded-graphics` repository]: https://github.com/embedded-graphics/embedded-graphics/compare/tinybmp-v0.2.3...before-split
 [0.2.3]: https://github.com/embedded-graphics/embedded-graphics/compare/tinybmp-v0.2.2...tinybmp-v0.2.3
 [0.2.2]: https://github.com/embedded-graphics/embedded-graphics/compare/tinybmp-v0.2.0...tinybmp-v0.2.2
 [0.2.1]: https://github.com/embedded-graphics/embedded-graphics/compare/tinybmp-v0.1.1...tinybmp-v0.2.1
