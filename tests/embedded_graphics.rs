@@ -63,15 +63,15 @@ where
     C: PixelColor + From<<C as PixelColor>::Raw> + ColorMapping,
 {
     let bmp = Bmp::<C>::from_slice(data).unwrap();
-    assert_eq!(draw_image(bmp), expected_image_color());
+    draw_image(bmp).assert_eq(&expected_image_color());
 }
 
 fn test_color_pattern_dynamic(data: &[u8]) {
     let bmp = DynamicBmp::from_slice(data).unwrap();
-    assert_eq!(draw_image(bmp), expected_image_color::<Rgb565>());
+    draw_image(bmp).assert_eq(&expected_image_color::<Rgb565>());
 
     let bmp = DynamicBmp::from_slice(data).unwrap();
-    assert_eq!(draw_image(bmp), expected_image_color::<Rgb888>());
+    draw_image(bmp).assert_eq(&expected_image_color::<Rgb888>());
 }
 
 #[test]
@@ -117,18 +117,18 @@ fn colors_rgb888_32bit_dynamic() {
 #[test]
 fn colors_grey8() {
     let bmp: Bmp<Gray8> = Bmp::from_slice(include_bytes!("./colors_grey8.bmp")).unwrap();
-    assert_eq!(draw_image(bmp), expected_image_gray());
+    draw_image(bmp).assert_eq(&expected_image_gray());
 }
 
 #[test]
 fn colors_grey8_dynamic() {
     let bmp = DynamicBmp::from_slice(include_bytes!("./colors_grey8.bmp")).unwrap();
     let display = draw_image::<Rgb565, _>(bmp);
-    assert_eq!(display, expected_image_gray().map(|c| c.into()));
+    display.assert_eq(&expected_image_gray().map(|c| c.into()));
 
     let bmp = DynamicBmp::from_slice(include_bytes!("./colors_grey8.bmp")).unwrap();
     let display = draw_image::<Rgb888, _>(bmp);
-    assert_eq!(display, expected_image_gray().map(|c| c.into()));
+    display.assert_eq(&expected_image_gray().map(|c| c.into()));
 }
 
 /// Test for issue #136
@@ -140,14 +140,11 @@ fn issue_136_row_size_is_multiple_of_4_bytes() {
     let mut display = MockDisplay::new();
     image.draw(&mut display).unwrap();
 
-    assert_eq!(
-        display,
-        MockDisplay::from_pattern(&[
-            "WWWWKWWWW",
-            "WKKKKWKKK",
-            "WWWWKWKWW",
-            "WKKKKWKKW",
-            "WWWWKWWWW",
-        ])
-    );
+    display.assert_pattern(&[
+        "WWWWKWWWW",
+        "WKKKKWKKK",
+        "WWWWKWKWW",
+        "WKKKKWKKW",
+        "WWWWKWWWW",
+    ]);
 }

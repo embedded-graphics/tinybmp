@@ -1,7 +1,8 @@
 use core::marker::PhantomData;
-use embedded_graphics_core::{
+use embedded_graphics::{
     pixelcolor::{Gray8, PixelColor, Rgb555, Rgb565, Rgb888},
     prelude::*,
+    primitives::Rectangle,
 };
 
 use crate::{
@@ -98,6 +99,13 @@ where
             ColorType::Rgb888 => self.raw_bmp.draw(&mut target.color_converted::<Rgb888>()),
             ColorType::Gray8 => self.raw_bmp.draw(&mut target.color_converted::<Gray8>()),
         }
+    }
+
+    fn draw_sub_image<D>(&self, target: &mut D, area: &Rectangle) -> Result<(), D::Error>
+    where
+        D: DrawTarget<Color = Self::Color>,
+    {
+        self.draw(&mut target.translated(-area.top_left).clipped(area))
     }
 }
 
