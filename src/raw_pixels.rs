@@ -1,4 +1,4 @@
-use embedded_graphics_core::prelude::*;
+use embedded_graphics::prelude::*;
 
 use crate::{header::Bpp, raw_bmp::RawBmp};
 

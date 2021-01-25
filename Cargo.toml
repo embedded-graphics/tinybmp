@@ -23,8 +23,6 @@ circle-ci = { repository = "embedded-graphics/tinybmp", branch = "master" }
 name = "embedded_graphics"
 
 [dependencies]
-embedded-graphics-core = "0.1.1"
+# TODO: replace git dependency when next e-g version is released
+embedded-graphics = { git = "https://github.com/embedded-graphics/embedded-graphics.git" }
 nom = { version = "6.0.1", default-features = false }
-
-[dev-dependencies]
-embedded-graphics = "0.7.0-alpha.2"

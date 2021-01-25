@@ -116,7 +116,7 @@ mod raw_bmp;
 mod raw_pixels;
 
 use core::marker::PhantomData;
-use embedded_graphics_core::prelude::*;
+use embedded_graphics::{prelude::*, primitives::Rectangle};
 
 pub use crate::{
     dynamic_bmp::DynamicBmp,
@@ -200,6 +200,13 @@ where
         D: DrawTarget<Color = C>,
     {
         self.as_raw().draw(target)
+    }
+
+    fn draw_sub_image<D>(&self, target: &mut D, area: &Rectangle) -> Result<(), D::Error>
+    where
+        D: DrawTarget<Color = Self::Color>,
+    {
+        self.draw(&mut target.translated(-area.top_left).clipped(area))
     }
 }
 
