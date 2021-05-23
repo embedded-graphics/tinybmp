@@ -7,7 +7,7 @@ use embedded_graphics::prelude::*;
 use nom::{
     bytes::complete::tag,
     combinator::map_opt,
-    number::complete::{le_u16, le_u32},
+    number::complete::{le_i32, le_u16, le_u32},
     IResult,
 };
 
@@ -75,6 +75,9 @@ pub struct Header {
 
     /// Bit masks for the color channels.
     pub channel_masks: Option<ChannelMasks>,
+
+    /// Image data is top-down, rather than the default bottom-up
+    pub image_data_top_down: bool,
 }
 
 impl Header {
@@ -86,11 +89,13 @@ impl Header {
         let (input, image_data_start) = le_u32(input)?;
         let (input, header_size) = le_u32(input)?;
         let (input, image_width) = le_u32(input)?;
-        let (input, image_height) = le_u32(input)?;
+        let (input, image_height) = le_i32(input)?;
         let (input, _color_planes) = le_u16(input)?;
         let (input, bpp) = Bpp::parse(input)?;
         let (input, compression_method) = CompressionMethod::parse(input)?;
         let (input, image_data_len) = le_u32(input)?;
+
+        let upside_down = image_height < 0;
 
         let (input, channel_masks) = if compression_method == CompressionMethod::Bitfields {
             // BMP header versions can be distinguished by the header length.
@@ -127,10 +132,11 @@ impl Header {
             Header {
                 file_size,
                 image_data_start: image_data_start as usize,
-                image_size: Size::new(image_width, image_height),
+                image_size: Size::new(image_width, image_height.abs() as u32),
                 image_data_len,
                 bpp,
                 channel_masks,
+                image_data_top_down: upside_down,
             },
         ))
     }

@@ -148,3 +148,26 @@ fn issue_136_row_size_is_multiple_of_4_bytes() {
         "WWWWKWWWW",
     ]);
 }
+
+/// Test for issue #8
+#[test]
+fn issue_8_height_is_negative() {
+    let image_positive: Bmp<Rgb888> =
+        Bmp::from_slice(include_bytes!("./issue_8-positive.bmp")).unwrap();
+    let image_negative: Bmp<Rgb888> =
+        Bmp::from_slice(include_bytes!("./issue_8-negative.bmp")).unwrap();
+
+    let image = Image::new(&image_positive, Point::zero());
+
+    let mut display = MockDisplay::new();
+    image.draw(&mut display).unwrap();
+
+    display.assert_pattern(&["WK", "KK"]);
+
+    let image = Image::new(&image_negative, Point::zero());
+
+    let mut display = MockDisplay::new();
+    image.draw(&mut display).unwrap();
+
+    display.assert_pattern(&["WK", "KK"]);
+}
