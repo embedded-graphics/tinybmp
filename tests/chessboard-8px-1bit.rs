@@ -1,5 +1,5 @@
 use embedded_graphics::prelude::*;
-use tinybmp::{Bpp, Header, RawBmp};
+use tinybmp::{Bpp, Header, RawBmp, RowOrder};
 
 #[test]
 fn chessboard_8px_1bit() {
@@ -15,7 +15,7 @@ fn chessboard_8px_1bit() {
             image_size: Size::new(8, 8),
             image_data_len: 32,
             channel_masks: None,
-            image_data_top_down: false
+            row_order: RowOrder::BottomUp
         }
     );
 

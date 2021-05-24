@@ -5,7 +5,7 @@ use embedded_graphics::{
     prelude::*,
     primitives::Rectangle,
 };
-use tinybmp::{Bmp, DynamicBmp};
+use tinybmp::{Bmp, DynamicBmp, RowOrder};
 
 #[test]
 fn negative_top_left() {
@@ -152,22 +152,24 @@ fn issue_136_row_size_is_multiple_of_4_bytes() {
 /// Test for issue #8
 #[test]
 fn issue_8_height_is_negative() {
-    let image_positive: Bmp<Rgb888> =
-        Bmp::from_slice(include_bytes!("./issue_8-positive.bmp")).unwrap();
-    let image_negative: Bmp<Rgb888> =
-        Bmp::from_slice(include_bytes!("./issue_8-negative.bmp")).unwrap();
+    let image_bottom_up: Bmp<Rgb888> =
+        Bmp::from_slice(include_bytes!("./issue_8-image_bottom_up.bmp")).unwrap();
+    let image_top_down: Bmp<Rgb888> =
+        Bmp::from_slice(include_bytes!("./issue_8-image_top_down.bmp")).unwrap();
 
-    let image = Image::new(&image_positive, Point::zero());
+    assert_eq!(image_bottom_up.as_raw().header().row_order, RowOrder::BottomUp);
+    assert_eq!(image_top_down.as_raw().header().row_order, RowOrder::TopDown);
 
-    let mut display = MockDisplay::new();
-    image.draw(&mut display).unwrap();
 
-    display.assert_pattern(&["WK", "KK"]);
+    let image_bottom_up = Image::new(&image_bottom_up, Point::zero());
+    let image_top_down = Image::new(&image_top_down, Point::zero());
 
-    let image = Image::new(&image_negative, Point::zero());
+    let mut bottom_up_display = MockDisplay::new();
+    let mut top_down_display = MockDisplay::new();
 
-    let mut display = MockDisplay::new();
-    image.draw(&mut display).unwrap();
+    image_bottom_up.draw(&mut bottom_up_display).unwrap();
+    image_top_down.draw(&mut top_down_display).unwrap();
 
-    display.assert_pattern(&["WK", "KK"]);
+    bottom_up_display.assert_pattern(&["WK", "KK"]);
+    top_down_display.assert_eq(&bottom_up_display);
 }

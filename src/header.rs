@@ -27,6 +27,16 @@ pub enum Bpp {
     Bits32,
 }
 
+/// Image row order
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[non_exhaustive]
+pub enum RowOrder {
+    /// Bottom-up (standard)
+    BottomUp,
+    /// Top-down
+    TopDown
+}
+
 impl Bpp {
     fn new(value: u16) -> Option<Self> {
         Some(match value {
@@ -57,6 +67,7 @@ impl Bpp {
 
 /// BMP header information
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[non_exhaustive]
 pub struct Header {
     /// Total file size in bytes.
     pub file_size: u32,
@@ -77,7 +88,7 @@ pub struct Header {
     pub channel_masks: Option<ChannelMasks>,
 
     /// Image data is top-down, rather than the default bottom-up
-    pub image_data_top_down: bool,
+    pub row_order: RowOrder,
 }
 
 impl Header {
@@ -95,7 +106,11 @@ impl Header {
         let (input, compression_method) = CompressionMethod::parse(input)?;
         let (input, image_data_len) = le_u32(input)?;
 
-        let upside_down = image_height < 0;
+        let row_order = if image_height < 0 {
+            RowOrder::TopDown
+        } else {
+            RowOrder::BottomUp
+        };
 
         let (input, channel_masks) = if compression_method == CompressionMethod::Bitfields {
             // BMP header versions can be distinguished by the header length.
@@ -136,7 +151,7 @@ impl Header {
                 image_data_len,
                 bpp,
                 channel_masks,
-                image_data_top_down: upside_down,
+                row_order: row_order,
             },
         ))
     }

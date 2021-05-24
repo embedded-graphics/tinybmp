@@ -67,7 +67,7 @@
 //!
 //! ```rust
 //! use embedded_graphics::prelude::*;
-//! use tinybmp::{RawBmp, Bpp, Header, RawPixel};
+//! use tinybmp::{RawBmp, Bpp, Header, RawPixel, RowOrder};
 //!
 //! let bmp = RawBmp::from_slice(include_bytes!("../tests/chessboard-8px-24bit.bmp"))
 //!     .expect("Failed to parse BMP image");
@@ -82,7 +82,7 @@
 //!         image_size: Size::new(8, 8),
 //!         image_data_len: 192,
 //!         channel_masks: None,
-//!         image_data_top_down: false
+//!         row_order: RowOrder::BottomUp
 //!     }
 //! );
 //!
@@ -121,7 +121,7 @@ use embedded_graphics::{prelude::*, primitives::Rectangle};
 
 pub use crate::{
     dynamic_bmp::DynamicBmp,
-    header::{Bpp, ChannelMasks, Header},
+    header::{Bpp, ChannelMasks, Header, RowOrder},
     pixels::Pixels,
     raw_bmp::RawBmp,
     raw_pixels::{RawPixel, RawPixels},

@@ -6,11 +6,9 @@
 
 ## [Unreleased] - ReleaseDate
 
-## [0.3.0-alpha.2] - 2021-05-23
-
 ### Changed
 
-- **(breaking)** [#9](https://github.com/embedded-graphics/tinybmp/pull/9) Added a synthesized field to the header structure to capture whether the image data is top-down, versus the standard bottom-up.  If the image height is negative it's a signal that it's top-down.  This value is captured, then `abs()`'d and kept in this field.  When the pixel data enumerator is used, this value is consulted to change iterator behavior.  This change fixes issue [#8](https://github.com/embedded-graphics/tinybmp/issues/8)
+- **(breaking)** [#9](https://github.com/embedded-graphics/tinybmp/pull/9) Added support for BMP images saved in top-down row order. A computed field `data_order` is added to the `Header` struct to capture whether the image data is ordered top-down, or the standard bottom-up. 
 
 ## [0.3.0-alpha.1] - 2020-12-27
 
