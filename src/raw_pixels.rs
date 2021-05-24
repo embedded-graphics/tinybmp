@@ -1,6 +1,9 @@
 use embedded_graphics::prelude::*;
 
-use crate::{header::Bpp, header::RowOrder, raw_bmp::RawBmp};
+use crate::{
+    header::{Bpp, RowOrder},
+    raw_bmp::RawBmp,
+};
 
 /// Iterator over individual BMP pixels.
 ///

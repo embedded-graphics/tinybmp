@@ -37,6 +37,12 @@ pub enum RowOrder {
     TopDown,
 }
 
+impl Default for RowOrder {
+    fn default() -> Self {
+        Self::BottomUp
+    }
+}
+
 impl Bpp {
     fn new(value: u16) -> Option<Self> {
         Some(match value {
@@ -86,7 +92,7 @@ pub struct Header {
     /// Bit masks for the color channels.
     pub channel_masks: Option<ChannelMasks>,
 
-    /// Image data is top-down, rather than the default bottom-up
+    /// Row order of the image data within the file
     pub row_order: RowOrder,
 }
 
@@ -150,7 +156,7 @@ impl Header {
                 image_data_len,
                 bpp,
                 channel_masks,
-                row_order: row_order,
+                row_order,
             },
         ))
     }
