@@ -34,7 +34,7 @@ pub enum RowOrder {
     /// Bottom-up (standard)
     BottomUp,
     /// Top-down
-    TopDown
+    TopDown,
 }
 
 impl Bpp {
@@ -67,7 +67,6 @@ impl Bpp {
 
 /// BMP header information
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-#[non_exhaustive]
 pub struct Header {
     /// Total file size in bytes.
     pub file_size: u32,

@@ -157,9 +157,14 @@ fn issue_8_height_is_negative() {
     let image_top_down: Bmp<Rgb888> =
         Bmp::from_slice(include_bytes!("./issue_8-image_top_down.bmp")).unwrap();
 
-    assert_eq!(image_bottom_up.as_raw().header().row_order, RowOrder::BottomUp);
-    assert_eq!(image_top_down.as_raw().header().row_order, RowOrder::TopDown);
-
+    assert_eq!(
+        image_bottom_up.as_raw().header().row_order,
+        RowOrder::BottomUp
+    );
+    assert_eq!(
+        image_top_down.as_raw().header().row_order,
+        RowOrder::TopDown
+    );
 
     let image_bottom_up = Image::new(&image_bottom_up, Point::zero());
     let image_top_down = Image::new(&image_top_down, Point::zero());
