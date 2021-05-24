@@ -5,7 +5,7 @@ use embedded_graphics::{
     prelude::*,
     primitives::Rectangle,
 };
-use tinybmp::{Bmp, DynamicBmp};
+use tinybmp::{Bmp, DynamicBmp, RowOrder};
 
 #[test]
 fn negative_top_left() {
@@ -147,4 +147,34 @@ fn issue_136_row_size_is_multiple_of_4_bytes() {
         "WKKKKWKKW",
         "WWWWKWWWW",
     ]);
+}
+
+/// Test for issue #8
+#[test]
+fn issue_8_height_is_negative() {
+    let image_bottom_up: Bmp<Rgb888> =
+        Bmp::from_slice(include_bytes!("./issue_8-image_bottom_up.bmp")).unwrap();
+    let image_top_down: Bmp<Rgb888> =
+        Bmp::from_slice(include_bytes!("./issue_8-image_top_down.bmp")).unwrap();
+
+    assert_eq!(
+        image_bottom_up.as_raw().header().row_order,
+        RowOrder::BottomUp
+    );
+    assert_eq!(
+        image_top_down.as_raw().header().row_order,
+        RowOrder::TopDown
+    );
+
+    let image_bottom_up = Image::new(&image_bottom_up, Point::zero());
+    let image_top_down = Image::new(&image_top_down, Point::zero());
+
+    let mut bottom_up_display = MockDisplay::new();
+    let mut top_down_display = MockDisplay::new();
+
+    image_bottom_up.draw(&mut bottom_up_display).unwrap();
+    image_top_down.draw(&mut top_down_display).unwrap();
+
+    bottom_up_display.assert_pattern(&["WK", "KK"]);
+    top_down_display.assert_eq(&bottom_up_display);
 }

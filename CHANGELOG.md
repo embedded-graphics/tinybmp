@@ -6,6 +6,10 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+- **(breaking)** [#9](https://github.com/embedded-graphics/tinybmp/pull/9) Added support for BMP images saved in top-down row order. A computed field `row_order` is added to the `Header` struct to capture whether the image data is ordered top-down, or the standard bottom-up. 
+
 ## [0.3.0-beta.1] - 2021-05-24
 
 ## [0.3.0-alpha.1] - 2020-12-27

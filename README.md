@@ -66,7 +66,7 @@ by using `as_raw`.
 
 ```rust
 use embedded_graphics::prelude::*;
-use tinybmp::{RawBmp, Bpp, Header, RawPixel};
+use tinybmp::{RawBmp, Bpp, Header, RawPixel, RowOrder};
 
 let bmp = RawBmp::from_slice(include_bytes!("../tests/chessboard-8px-24bit.bmp"))
     .expect("Failed to parse BMP image");
@@ -81,6 +81,7 @@ assert_eq!(
         image_size: Size::new(8, 8),
         image_data_len: 192,
         channel_masks: None,
+        row_order: RowOrder::BottomUp
     }
 );
 

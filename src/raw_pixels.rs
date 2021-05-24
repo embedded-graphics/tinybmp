@@ -1,6 +1,9 @@
 use embedded_graphics::prelude::*;
 
-use crate::{header::Bpp, raw_bmp::RawBmp};
+use crate::{
+    header::{Bpp, RowOrder},
+    raw_bmp::RawBmp,
+};
 
 /// Iterator over individual BMP pixels.
 ///
@@ -44,7 +47,12 @@ impl Iterator for RawPixels<'_, '_> {
         let p = self.position;
 
         if self.position.x == 0 {
-            let row_index = (self.raw_bmp.size().height as i32 - 1) - self.position.y;
+            let row_index = if self.raw_bmp.header().row_order == RowOrder::TopDown {
+                self.position.y
+            } else {
+                (self.raw_bmp.size().height as i32 - 1) - self.position.y
+            };
+
             let row_start = self.raw_bmp.bytes_per_row() * row_index as usize;
 
             self.bit_idx = row_start * 8;
