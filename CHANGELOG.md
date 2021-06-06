@@ -6,6 +6,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [0.3.0] - 2021-06-06
+
 ## [0.3.0-beta.2] - 2021-05-24
 
 ### Changed
@@ -111,7 +113,8 @@
 - Release `tinybmp` crate to crates.io
 
 <!-- next-url -->
-[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.0-beta.2...HEAD
+[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.0-beta.2...v0.3.0
 [0.3.0-beta.2]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.0-beta.1...v0.3.0-beta.2
 [0.3.0-beta.1]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.0-alpha.1...v0.3.0-beta.1
 
