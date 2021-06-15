@@ -6,13 +6,17 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+- [#13](https://github.com/embedded-graphics/tinybmp/pull/13) Bump embedded-graphics minimum version from 0.7.0 to 0.7.1
+
 ## [0.3.0] - 2021-06-06
 
 ## [0.3.0-beta.2] - 2021-05-24
 
 ### Changed
 
-- **(breaking)** [#9](https://github.com/embedded-graphics/tinybmp/pull/9) Added support for BMP images saved in top-down row order. A computed field `row_order` is added to the `Header` struct to capture whether the image data is ordered top-down, or the standard bottom-up. 
+- **(breaking)** [#9](https://github.com/embedded-graphics/tinybmp/pull/9) Added support for BMP images saved in top-down row order. A computed field `row_order` is added to the `Header` struct to capture whether the image data is ordered top-down, or the standard bottom-up.
 
 ## [0.3.0-beta.1] - 2021-05-24
 
@@ -113,11 +117,11 @@
 - Release `tinybmp` crate to crates.io
 
 <!-- next-url -->
+
 [unreleased]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.0...HEAD
 [0.3.0]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.0-beta.2...v0.3.0
 [0.3.0-beta.2]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.0-beta.1...v0.3.0-beta.2
 [0.3.0-beta.1]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.0-alpha.1...v0.3.0-beta.1
-
 [0.3.0-alpha.1]: https://github.com/embedded-graphics/tinybmp/compare/after-split...v0.3.0-alpha.1
 [0.3.0-alpha.1 - `embedded-graphics` repository]: https://github.com/embedded-graphics/embedded-graphics/compare/tinybmp-v0.2.3...before-split
 [0.2.3]: https://github.com/embedded-graphics/embedded-graphics/compare/tinybmp-v0.2.2...tinybmp-v0.2.3
