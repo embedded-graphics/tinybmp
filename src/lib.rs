@@ -167,15 +167,6 @@ where
     }
 
     /// Returns an iterator over the pixels in this image.
-    ///
-    /// The iterator automatically converts the pixel colors into an `embedded-graphics` color type,
-    /// that is when the [`from_slice`] constructor was called. This method isn't available when
-    /// the [`from_slice_raw`] constructor was used and the pixel can only be accessed by using the
-    /// [`raw_pixels`] method.
-    ///
-    /// [`from_slice`]: #method.from_slice
-    /// [`from_slice_raw`]: #method.from_slice_raw
-    /// [`raw_pixels`]: #method.raw_pixels
     pub fn pixels<'b>(&'b self) -> Pixels<'b, 'a, C> {
         Pixels::new(self.raw_bmp.pixels())
     }
