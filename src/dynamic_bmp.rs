@@ -20,6 +20,8 @@ use crate::{
 /// `DynamicBmp` works for all embedded-graphics draw targets that use a color type that implements
 /// `From` for `Rgb555, `Rgb565`, `Rgb888` and `Gray8`, like every `Rgb...` and `Bgr...` type
 /// included in embedded-graphics.
+///
+/// [`Bmp`]: struct.Bmp.html
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct DynamicBmp<'a, C> {
     raw_bmp: RawBmp<'a>,
