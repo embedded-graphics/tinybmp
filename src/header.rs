@@ -104,6 +104,9 @@ const FILE_HEADER_SIZE: usize = 14;
 
 /// Size of BITMAPV4HEADER in bytes. Note that this does not include the common fields counted in
 /// [`FILE_HEADER_SIZE`].
+///
+/// Additional header sizes can be found
+/// [here](https://www.liquisearch.com/bmp_file_format/file_structure/dib_header_bitmap_information_header).
 const V4_HEADER_SIZE: usize = 108;
 
 impl Header {
@@ -123,13 +126,6 @@ impl Header {
         let (input, bpp) = Bpp::parse(input)?;
         let (input, compression_method) = CompressionMethod::parse(input)?;
         let (input, image_data_len) = le_u32(input)?;
-
-        match header_size {
-            56 => (),  // v3 header
-            108 => (), // v4 header
-            124 => (), // v5 header
-            _ => (),   // Other
-        }
 
         // Special case: 1BPP images can be inverted by using the color table. Other bit depths are
         // either unsupported by tinybmp (4bpp) or are required not to use this table (16bpp and
