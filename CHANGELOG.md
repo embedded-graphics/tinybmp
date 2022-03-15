@@ -6,6 +6,10 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Fixed 
+
+- [#19](https://github.com/embedded-graphics/tinybmp/pull/19) Add support for color mapped 1bpp images
+
 ## [0.3.1] - 2021-06-16
 
 ### Changed
