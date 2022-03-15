@@ -15,7 +15,8 @@ fn chessboard_8px_1bit() {
             image_size: Size::new(8, 8),
             image_data_len: 32,
             channel_masks: None,
-            row_order: RowOrder::BottomUp
+            row_order: RowOrder::BottomUp,
+            color_table: None,
         }
     );
 

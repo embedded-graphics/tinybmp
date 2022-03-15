@@ -71,7 +71,16 @@ impl Iterator for RawPixels<'_, '_> {
         match self.raw_bmp.color_bpp() {
             Bpp::Bits1 => self.pixel_data.get(byte_idx).map(|byte| {
                 let mask = 0b_1000_0000 >> self.bit_idx % 8;
-                pixel_value[0] = (byte & mask != 0) as u8;
+
+                let bit = byte & mask != 0;
+
+                if let Some(table) = self.raw_bmp.header().color_table {
+                    // Color mapping - look into table for 0/1 mapped color
+                    pixel_value = table[bit as usize].to_le_bytes();
+                } else {
+                    // No color mapping - use on/off value directly
+                    pixel_value[0] = bit as u8;
+                }
             }),
             Bpp::Bits8 => self
                 .pixel_data

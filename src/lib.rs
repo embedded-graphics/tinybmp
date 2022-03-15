@@ -82,7 +82,8 @@
 //!         image_size: Size::new(8, 8),
 //!         image_data_len: 192,
 //!         channel_masks: None,
-//!         row_order: RowOrder::BottomUp
+//!         row_order: RowOrder::BottomUp,
+//!         color_table: None,
 //!     }
 //! );
 //!

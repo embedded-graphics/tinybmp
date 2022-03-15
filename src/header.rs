@@ -94,15 +94,28 @@ pub struct Header {
 
     /// Row order of the image data within the file
     pub row_order: RowOrder,
+
+    /// Color table for color mapped 1bpp images.
+    pub color_table: Option<[u32; 2]>,
 }
+
+/// Basic file header size in bytes. The Microsoft documentation calls this `tagBITMAPFILEHEADER`.
+const FILE_HEADER_SIZE: usize = 14;
+
+/// Size of BITMAPV4HEADER in bytes. Note that this does not include the common fields counted in
+/// [`FILE_HEADER_SIZE`].
+const V4_HEADER_SIZE: usize = 108;
 
 impl Header {
     pub(crate) fn parse(input: &[u8]) -> IResult<&[u8], Header> {
+        let orig = input;
+
         let (input, _) = tag("BM")(input)?;
         let (input, file_size) = le_u32(input)?;
         let (input, _reserved_1) = le_u16(input)?;
         let (input, _reserved_2) = le_u16(input)?;
         let (input, image_data_start) = le_u32(input)?;
+        // Header size excluding MIME marker and the 4 fields above
         let (input, header_size) = le_u32(input)?;
         let (input, image_width) = le_u32(input)?;
         let (input, image_height) = le_i32(input)?;
@@ -110,6 +123,32 @@ impl Header {
         let (input, bpp) = Bpp::parse(input)?;
         let (input, compression_method) = CompressionMethod::parse(input)?;
         let (input, image_data_len) = le_u32(input)?;
+
+        match header_size {
+            56 => (),  // v3 header
+            108 => (), // v4 header
+            124 => (), // v5 header
+            _ => (),   // Other
+        }
+
+        // Special case: 1BPP images can be inverted by using the color table. Other bit depths are
+        // either unsupported by tinybmp (4bpp) or are required not to use this table (16bpp and
+        // greater). I'll deliberately not support 8bpp as storing this in a fixed size array would
+        // consume way too much memory.
+        let color_table: Option<[u32; 2]> =
+            if header_size as usize >= V4_HEADER_SIZE && bpp == Bpp::Bits1 {
+                // Position after all header data
+                let offset = header_size as usize + FILE_HEADER_SIZE;
+
+                let next = &orig[offset..];
+
+                let (next, c1) = le_u32(next)?;
+                let (_next, c2) = le_u32(next)?;
+
+                Some([c1, c2])
+            } else {
+                None
+            };
 
         let row_order = if image_height < 0 {
             RowOrder::TopDown
@@ -157,6 +196,7 @@ impl Header {
                 bpp,
                 channel_masks,
                 row_order,
+                color_table,
             },
         ))
     }
