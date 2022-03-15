@@ -1,4 +1,4 @@
-use embedded_graphics::prelude::*;
+use embedded_graphics::{pixelcolor::Rgb888, prelude::*};
 use tinybmp::{Bpp, Header, RawBmp, RowOrder};
 
 #[test]
@@ -42,6 +42,38 @@ fn chessboard_8px_1bit_iter() {
         1, 1, 0, 0, 1, 1, 0, 0, //
         0, 0, 1, 1, 0, 0, 1, 1, //
         0, 0, 1, 1, 0, 0, 1, 1, //
+    ];
+
+    assert_eq!(pixels, expected);
+}
+
+#[test]
+fn chessboard_8px_1bit_iter_inverted() {
+    // Inverted image created with Imagemagick command:
+    // convert chessboard-8px-1bit.bmp -negate -type bilevel chessboard-8px-1bit-inverted.bmp
+    let bmp = RawBmp::from_slice(include_bytes!("./chessboard-8px-1bit-inverted.bmp"))
+        .expect("Failed to parse");
+
+    dbg!(bmp.header());
+
+    let pixels: Vec<u32> = bmp.pixels().map(|pixel| pixel.color).collect();
+
+    // 8px x 8px image. Check that iterator returns all pixels in it
+    assert_eq!(pixels.len(), 8 * 8);
+
+    // Imagemagick inverts using a color mapping table which maps a 0 to [255, 255, 255, 0], hence
+    // this instead of a simple `1` value.
+    let w = Rgb888::WHITE.into_storage();
+
+    let expected = vec![
+        0, 0, w, w, 0, 0, w, w, //
+        0, 0, w, w, 0, 0, w, w, //
+        w, w, 0, 0, w, w, 0, 0, //
+        w, w, 0, 0, w, w, 0, 0, //
+        0, 0, w, w, 0, 0, w, w, //
+        0, 0, w, w, 0, 0, w, w, //
+        w, w, 0, 0, w, w, 0, 0, //
+        w, w, 0, 0, w, w, 0, 0, //
     ];
 
     assert_eq!(pixels, expected);
