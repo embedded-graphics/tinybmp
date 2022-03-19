@@ -5,7 +5,7 @@
 
 mod dib_header;
 
-use self::dib_header::DibHeader;
+use crate::header::dib_header::DibHeader;
 use embedded_graphics::prelude::*;
 use nom::{
     bytes::complete::{tag, take},
@@ -101,9 +101,6 @@ pub struct Header<'a> {
     /// Color table for color mapped 1bpp images.
     pub color_table: Option<&'a [u8]>,
 }
-
-// /// Basic file header size in bytes. The Microsoft documentation calls this `tagBITMAPFILEHEADER`.
-// const FILE_HEADER_SIZE: usize = 14;
 
 impl<'a> Header<'a> {
     pub(crate) fn parse(input: &[u8]) -> IResult<&[u8], Header> {
