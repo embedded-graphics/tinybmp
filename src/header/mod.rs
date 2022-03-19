@@ -3,11 +3,14 @@
 //! Information gleaned from [wikipedia](https://en.wikipedia.org/wiki/BMP_file_format) and
 //! [this website](http://paulbourke.net/dataformats/bmp/)
 
+mod dib_header;
+
+use self::dib_header::DibHeader;
 use embedded_graphics::prelude::*;
 use nom::{
-    bytes::complete::tag,
+    bytes::complete::{tag, take},
     combinator::map_opt,
-    number::complete::{le_i32, le_u16, le_u32},
+    number::complete::{le_u16, le_u32},
     IResult,
 };
 
@@ -73,7 +76,7 @@ impl Bpp {
 
 /// BMP header information
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-pub struct Header {
+pub struct Header<'a> {
     /// Total file size in bytes.
     pub file_size: u32,
 
@@ -96,87 +99,38 @@ pub struct Header {
     pub row_order: RowOrder,
 
     /// Color table for color mapped 1bpp images.
-    pub color_table: Option<[u32; 2]>,
+    pub color_table: Option<&'a [u8]>,
 }
 
-/// Basic file header size in bytes. The Microsoft documentation calls this `tagBITMAPFILEHEADER`.
-const FILE_HEADER_SIZE: usize = 14;
+// /// Basic file header size in bytes. The Microsoft documentation calls this `tagBITMAPFILEHEADER`.
+// const FILE_HEADER_SIZE: usize = 14;
 
-/// Size of BITMAPV4HEADER in bytes. Note that this does not include the common fields counted in
-/// [`FILE_HEADER_SIZE`].
-///
-/// Additional header sizes can be found
-/// [here](https://www.liquisearch.com/bmp_file_format/file_structure/dib_header_bitmap_information_header).
-const V4_HEADER_SIZE: usize = 108;
-
-impl Header {
+impl<'a> Header<'a> {
     pub(crate) fn parse(input: &[u8]) -> IResult<&[u8], Header> {
-        let orig = input;
-
+        // File header
         let (input, _) = tag("BM")(input)?;
         let (input, file_size) = le_u32(input)?;
         let (input, _reserved_1) = le_u16(input)?;
         let (input, _reserved_2) = le_u16(input)?;
         let (input, image_data_start) = le_u32(input)?;
-        // Header size excluding MIME marker and the 4 fields above
-        let (input, header_size) = le_u32(input)?;
-        let (input, image_width) = le_u32(input)?;
-        let (input, image_height) = le_i32(input)?;
-        let (input, _color_planes) = le_u16(input)?;
-        let (input, bpp) = Bpp::parse(input)?;
-        let (input, compression_method) = CompressionMethod::parse(input)?;
-        let (input, image_data_len) = le_u32(input)?;
 
-        // Special case: 1BPP images can be inverted by using the color table. Other bit depths are
-        // either unsupported by tinybmp (4bpp) or are required not to use this table (16bpp and
-        // greater). I'll deliberately not support 8bpp as storing this in a fixed size array would
-        // consume way too much memory.
-        let color_table: Option<[u32; 2]> =
-            if header_size as usize >= V4_HEADER_SIZE && bpp == Bpp::Bits1 {
-                // Position after all header data
-                let offset = header_size as usize + FILE_HEADER_SIZE;
+        // DIB header
+        let (input, dib_header) = DibHeader::parse(input)?;
 
-                let next = &orig[offset..];
+        let (input, color_table) = if let Some(color_table_size) = dib_header.color_table_size {
+            match dib_header.bpp {
+                Bpp::Bits1 | Bpp::Bits8 if color_table_size > 0 => {
+                    // Each color table entry is 4 bytes long
+                    let (input, entries) = take(color_table_size as usize * 4)(input)?;
 
-                let (next, c1) = le_u32(next)?;
-                let (_next, c2) = le_u32(next)?;
+                    // TODO: Experiment with slice::as_chunks when it's stabilised
 
-                Some([c1, c2])
-            } else {
-                None
-            };
-
-        let row_order = if image_height < 0 {
-            RowOrder::TopDown
-        } else {
-            RowOrder::BottomUp
-        };
-
-        let (input, channel_masks) = if compression_method == CompressionMethod::Bitfields {
-            // BMP header versions can be distinguished by the header length.
-            // The color bit masks are only included in headers with at least version 3.
-            if header_size >= 56 {
-                let (input, _pels_per_meter_x) = le_u32(input)?;
-                let (input, _pels_per_meter_y) = le_u32(input)?;
-                let (input, _clr_used) = le_u32(input)?;
-                let (input, _clr_important) = le_u32(input)?;
-                let (input, mask_red) = le_u32(input)?;
-                let (input, mask_green) = le_u32(input)?;
-                let (input, mask_blue) = le_u32(input)?;
-                let (input, mask_alpha) = le_u32(input)?;
-
-                (
-                    input,
-                    Some(ChannelMasks {
-                        red: mask_red,
-                        green: mask_green,
-                        blue: mask_blue,
-                        alpha: mask_alpha,
-                    }),
-                )
-            } else {
-                // TODO: this should probably be an error
-                (input, None)
+                    (input, Some(entries))
+                }
+                _ => {
+                    // Color table is not used at BPP > 8 even if present
+                    (input, None)
+                }
             }
         } else {
             (input, None)
@@ -187,11 +141,11 @@ impl Header {
             Header {
                 file_size,
                 image_data_start: image_data_start as usize,
-                image_size: Size::new(image_width, image_height.abs() as u32),
-                image_data_len,
-                bpp,
-                channel_masks,
-                row_order,
+                image_size: dib_header.image_size,
+                image_data_len: dib_header.image_data_len,
+                bpp: dib_header.bpp,
+                channel_masks: dib_header.channel_masks,
+                row_order: dib_header.row_order,
                 color_table,
             },
         ))

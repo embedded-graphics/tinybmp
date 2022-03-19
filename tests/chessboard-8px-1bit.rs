@@ -16,7 +16,7 @@ fn chessboard_8px_1bit() {
             image_data_len: 32,
             channel_masks: None,
             row_order: RowOrder::BottomUp,
-            color_table: None,
+            color_table: Some(&[0, 0, 0, 0, 255, 255, 255, 255]),
         }
     );
 
@@ -33,15 +33,19 @@ fn chessboard_8px_1bit_iter() {
     // 8px x 8px image. Check that iterator returns all pixels in it
     assert_eq!(pixels.len(), 8 * 8);
 
+    // Imagemagick inverts using a color mapping table which maps a 0 to [255, 255, 255, 0], hence
+    // this instead of a simple `1` value.
+    let w: u32 = Rgb888::WHITE.into_storage();
+
     let expected = vec![
-        1, 1, 0, 0, 1, 1, 0, 0, //
-        1, 1, 0, 0, 1, 1, 0, 0, //
-        0, 0, 1, 1, 0, 0, 1, 1, //
-        0, 0, 1, 1, 0, 0, 1, 1, //
-        1, 1, 0, 0, 1, 1, 0, 0, //
-        1, 1, 0, 0, 1, 1, 0, 0, //
-        0, 0, 1, 1, 0, 0, 1, 1, //
-        0, 0, 1, 1, 0, 0, 1, 1, //
+        w, w, 0, 0, w, w, 0, 0, //
+        w, w, 0, 0, w, w, 0, 0, //
+        0, 0, w, w, 0, 0, w, w, //
+        0, 0, w, w, 0, 0, w, w, //
+        w, w, 0, 0, w, w, 0, 0, //
+        w, w, 0, 0, w, w, 0, 0, //
+        0, 0, w, w, 0, 0, w, w, //
+        0, 0, w, w, 0, 0, w, w, //
     ];
 
     assert_eq!(pixels, expected);
@@ -53,8 +57,6 @@ fn chessboard_8px_1bit_iter_inverted() {
     // convert chessboard-8px-1bit.bmp -negate -type bilevel chessboard-8px-1bit-inverted.bmp
     let bmp = RawBmp::from_slice(include_bytes!("./chessboard-8px-1bit-inverted.bmp"))
         .expect("Failed to parse");
-
-    dbg!(bmp.header());
 
     let pixels: Vec<u32> = bmp.pixels().map(|pixel| pixel.color).collect();
 

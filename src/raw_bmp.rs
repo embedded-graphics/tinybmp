@@ -11,7 +11,7 @@ use crate::{
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct RawBmp<'a> {
     /// Image header.
-    header: Header,
+    header: Header<'a>,
 
     /// Image data.
     image_data: &'a [u8],
