@@ -82,7 +82,6 @@ assert_eq!(
         image_data_len: 192,
         channel_masks: None,
         row_order: RowOrder::BottomUp,
-        color_table: None,
     }
 );
 
