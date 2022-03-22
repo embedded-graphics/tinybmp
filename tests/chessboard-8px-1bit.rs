@@ -21,7 +21,7 @@ fn chessboard_8px_1bit() {
 
     assert_eq!(
         bmp.color_table(),
-        Some([0u8, 0, 0, 0, 255, 255, 255, 255].as_slice())
+        Some(&[0u8, 0, 0, 0, 255, 255, 255, 255][..])
     );
 
     assert_eq!(bmp.image_data().len(), 94 - 62);
