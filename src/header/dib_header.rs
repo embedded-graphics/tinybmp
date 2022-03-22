@@ -26,7 +26,7 @@ pub struct DibHeader {
     pub header_type: HeaderType,
     pub row_order: RowOrder,
     /// Entry length of color table (NOT length in bytes)
-    pub color_table_size: Option<u32>,
+    pub color_table_num_entries: u32,
 }
 
 impl DibHeader {
@@ -67,27 +67,25 @@ impl DibHeader {
         let (dib_header_data, colors_used) = le_u32(dib_header_data)?;
         let (dib_header_data, _colors_important) = le_u32(dib_header_data)?;
 
-        let (_dib_header_data, channel_masks) = match header_type {
-            HeaderType::V3 | HeaderType::V4 | HeaderType::V5
-                if compression_method == CompressionMethod::Bitfields =>
-            {
-                let (dib_header_data, mask_red) = le_u32(dib_header_data)?;
-                let (dib_header_data, mask_green) = le_u32(dib_header_data)?;
-                let (dib_header_data, mask_blue) = le_u32(dib_header_data)?;
-                let (dib_header_data, mask_alpha) = le_u32(dib_header_data)?;
+        let (_dib_header_data, channel_masks) = if header_type.is_at_least(HeaderType::V3)
+            && compression_method == CompressionMethod::Bitfields
+        {
+            let (dib_header_data, mask_red) = le_u32(dib_header_data)?;
+            let (dib_header_data, mask_green) = le_u32(dib_header_data)?;
+            let (dib_header_data, mask_blue) = le_u32(dib_header_data)?;
+            let (dib_header_data, mask_alpha) = le_u32(dib_header_data)?;
 
-                (
-                    dib_header_data,
-                    Some(ChannelMasks {
-                        red: mask_red,
-                        green: mask_green,
-                        blue: mask_blue,
-                        alpha: mask_alpha,
-                    }),
-                )
-            }
-            HeaderType::Info => (dib_header_data, None),
-            _ => (dib_header_data, None),
+            (
+                dib_header_data,
+                Some(ChannelMasks {
+                    red: mask_red,
+                    green: mask_green,
+                    blue: mask_blue,
+                    alpha: mask_alpha,
+                }),
+            )
+        } else {
+            (dib_header_data, None)
         };
 
         // Number of colors in the color table. If the specific count is zero, the entire color
@@ -134,10 +132,16 @@ impl DibHeader {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum HeaderType {
+    Info,
     V3,
     V4,
     V5,
-    Info,
+}
+
+impl HeaderType {
+    fn is_at_least(self, header_type: HeaderType) -> bool {
+        self as u8 >= header_type as u8
+    }
 }

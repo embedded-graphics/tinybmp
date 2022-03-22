@@ -120,7 +120,7 @@ impl<'a> Header<'a> {
                     // Each color table entry is 4 bytes long
                     let (input, entries) = take(color_table_size as usize * 4)(input)?;
 
-                    // TODO: Experiment with slice::as_chunks when it's stabilised
+                    // MSRV: Experiment with slice::as_chunks when it's stabilised
 
                     (input, Some(entries))
                 }
