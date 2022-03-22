@@ -1,13 +1,14 @@
 //! Device Independent Bitmap (DIB) header.
 
-use crate::header::CompressionMethod;
-use crate::{Bpp, ChannelMasks, RowOrder};
+use crate::{header::CompressionMethod, Bpp, ChannelMasks, RowOrder};
 use embedded_graphics::geometry::Size;
-use nom::combinator::map;
-use nom::error::{ErrorKind, ParseError};
-use nom::multi::length_data;
-use nom::number::complete::{le_i32, le_u16, le_u32};
-use nom::IResult;
+use nom::{
+    combinator::map,
+    error::{ErrorKind, ParseError},
+    multi::length_data,
+    number::complete::{le_i32, le_u16, le_u32},
+    IResult,
+};
 
 const DIB_INFO_HEADER_SIZE: usize = 40;
 const DIB_V3_HEADER_SIZE: usize = 56;
