@@ -40,16 +40,17 @@ fn chessboard_8px_1bit_iter() {
     // Imagemagick inverts using a color mapping table which maps a 0 to [255, 255, 255, 0], hence
     // this instead of a simple `1` value.
     let w: u32 = Rgb888::WHITE.into_storage();
+    let b = 0u32;
 
     let expected = vec![
-        w, w, 0, 0, w, w, 0, 0, //
-        w, w, 0, 0, w, w, 0, 0, //
-        0, 0, w, w, 0, 0, w, w, //
-        0, 0, w, w, 0, 0, w, w, //
-        w, w, 0, 0, w, w, 0, 0, //
-        w, w, 0, 0, w, w, 0, 0, //
-        0, 0, w, w, 0, 0, w, w, //
-        0, 0, w, w, 0, 0, w, w, //
+        w, w, b, b, w, w, b, b, //
+        w, w, b, b, w, w, b, b, //
+        b, b, w, w, b, b, w, w, //
+        b, b, w, w, b, b, w, w, //
+        w, w, b, b, w, w, b, b, //
+        w, w, b, b, w, w, b, b, //
+        b, b, w, w, b, b, w, w, //
+        b, b, w, w, b, b, w, w, //
     ];
 
     assert_eq!(pixels, expected);
