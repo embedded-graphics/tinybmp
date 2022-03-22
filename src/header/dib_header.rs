@@ -3,7 +3,7 @@
 use crate::{header::CompressionMethod, Bpp, ChannelMasks, RowOrder};
 use embedded_graphics::geometry::Size;
 use nom::{
-    combinator::map,
+    combinator::map_opt,
     error::{ErrorKind, ParseError},
     multi::length_data,
     number::complete::{le_i32, le_u16, le_u32},
@@ -33,7 +33,8 @@ impl DibHeader {
     pub fn parse(input: &[u8]) -> IResult<&[u8], Self> {
         // The header size in the BMP includes its own u32, so we strip it out by subtracting 4
         // bytes to get the right final offset to the end of the header.
-        let (input, dib_header_data) = length_data(map(le_u32, |len| len - 4))(input)?;
+        let (input, dib_header_data) =
+            length_data(map_opt(le_u32, |len| len.checked_sub(4)))(input)?;
 
         // Add 4 back on so the constants remain the correct size relative to the BMP
         // documentation/specs.
