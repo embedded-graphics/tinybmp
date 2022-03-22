@@ -17,9 +17,10 @@ fn chessboard_8px_24bit() {
             image_data_len: 192,
             channel_masks: None,
             row_order: RowOrder::BottomUp,
-            color_table: None,
         }
     );
+
+    assert_eq!(bmp.color_table(), None);
 
     assert_eq!(bmp.image_data().len(), 314 - 122);
 }
@@ -41,9 +42,10 @@ fn chessboard_8px_24bit_truncated_iter() {
             image_data_len: 192,
             channel_masks: None,
             row_order: RowOrder::BottomUp,
-            color_table: None,
         }
     );
+
+    assert_eq!(bmp.color_table(), None);
 
     let pixels: Vec<u32> = bmp.pixels().map(|pixel| pixel.color).collect();
 

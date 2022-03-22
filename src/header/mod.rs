@@ -76,7 +76,7 @@ impl Bpp {
 
 /// BMP header information
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
-pub struct Header<'a> {
+pub struct Header {
     /// Total file size in bytes.
     pub file_size: u32,
 
@@ -97,13 +97,10 @@ pub struct Header<'a> {
 
     /// Row order of the image data within the file
     pub row_order: RowOrder,
-
-    /// Color table for color mapped 1bpp images.
-    pub color_table: Option<&'a [u8]>,
 }
 
-impl<'a> Header<'a> {
-    pub(crate) fn parse(input: &[u8]) -> IResult<&[u8], Header> {
+impl Header {
+    pub(crate) fn parse(input: &[u8]) -> IResult<&[u8], (Header, Option<&[u8]>)> {
         // File header
         let (input, _) = tag("BM")(input)?;
         let (input, file_size) = le_u32(input)?;
@@ -136,16 +133,18 @@ impl<'a> Header<'a> {
 
         Ok((
             input,
-            Header {
-                file_size,
-                image_data_start: image_data_start as usize,
-                image_size: dib_header.image_size,
-                image_data_len: dib_header.image_data_len,
-                bpp: dib_header.bpp,
-                channel_masks: dib_header.channel_masks,
-                row_order: dib_header.row_order,
+            (
+                Header {
+                    file_size,
+                    image_data_start: image_data_start as usize,
+                    image_size: dib_header.image_size,
+                    image_data_len: dib_header.image_data_len,
+                    bpp: dib_header.bpp,
+                    channel_masks: dib_header.channel_masks,
+                    row_order: dib_header.row_order,
+                },
                 color_table,
-            },
+            ),
         ))
     }
 }

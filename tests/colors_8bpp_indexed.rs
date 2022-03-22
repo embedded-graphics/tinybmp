@@ -5,7 +5,7 @@ fn colors_8bpp_indexed() {
     let bmp =
         RawBmp::from_slice(include_bytes!("./colors_8bpp_indexed.bmp")).expect("Failed to parse");
 
-    assert!(bmp.header().color_table.is_some());
+    assert!(bmp.color_table().is_some());
 
     let pixels: Vec<u32> = bmp.pixels().map(|pixel| pixel.color).collect();
 

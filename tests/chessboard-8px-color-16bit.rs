@@ -16,9 +16,10 @@ fn chessboard_8px_color_16bit() {
             image_data_len: 128,
             channel_masks: Some(ChannelMasks::RGB565),
             row_order: RowOrder::BottomUp,
-            color_table: None,
         }
     );
+
+    assert_eq!(bmp.color_table(), None);
 
     assert_eq!(bmp.image_data().len(), 266 - 138);
 }

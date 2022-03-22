@@ -74,7 +74,7 @@ impl Iterator for RawPixels<'_, '_> {
 
                 let bit = byte & mask != 0;
 
-                if let Some(table) = self.raw_bmp.header().color_table {
+                if let Some(table) = self.raw_bmp.color_table() {
                     // Color mapping - look into table for 0/1 mapped color
                     let bit = bit as usize;
 
@@ -91,7 +91,7 @@ impl Iterator for RawPixels<'_, '_> {
             }),
             Bpp::Bits8 => self.pixel_data.get(byte_idx).map(|byte| {
                 // Color mapping - look into table for mapped color
-                if let Some(table) = self.raw_bmp.header().color_table {
+                if let Some(table) = self.raw_bmp.color_table() {
                     // Each color table entry is 4 bytes long
                     let offset = *byte as usize * 4;
 

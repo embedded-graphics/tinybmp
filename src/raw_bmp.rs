@@ -11,7 +11,10 @@ use crate::{
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct RawBmp<'a> {
     /// Image header.
-    header: Header<'a>,
+    header: Header,
+
+    /// Color table for color mapped 1bpp images.
+    color_table: Option<&'a [u8]>,
 
     /// Image data.
     image_data: &'a [u8],
@@ -30,11 +33,16 @@ impl<'a> RawBmp<'a> {
     /// [`from_slice`]: #method.from_slice
     /// [`pixels`]: #method.pixels
     pub fn from_slice(bytes: &'a [u8]) -> Result<Self, ParseError> {
-        let (_remaining, header) = Header::parse(bytes).map_err(|_| ParseError::Header)?;
+        let (_remaining, (header, color_table)) =
+            Header::parse(bytes).map_err(|_| ParseError::Header)?;
 
         let image_data = &bytes[header.image_data_start..];
 
-        Ok(Self { header, image_data })
+        Ok(Self {
+            header,
+            color_table,
+            image_data,
+        })
     }
 
     /// Returns the size of this image in pixels.
@@ -45,6 +53,11 @@ impl<'a> RawBmp<'a> {
     /// Returns the BPP (bits per pixel) for this image.
     pub fn color_bpp(&self) -> Bpp {
         self.header.bpp
+    }
+
+    /// Get the color table associated with the image.
+    pub fn color_table(&self) -> Option<&'a [u8]> {
+        self.color_table
     }
 
     /// Returns a slice containing the raw image data.
