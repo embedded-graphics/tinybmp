@@ -91,24 +91,10 @@ impl DibHeader {
 
         // Number of colors in the color table. If the specific count is zero, the entire color
         // space should be used.
-        let color_table_size: u32 = if colors_used == 0 {
+        let color_table_num_entries: u32 = if colors_used == 0 {
             bpp.bits().pow(2).into()
         } else {
             colors_used
-        };
-
-        let color_table_size = match bpp {
-            Bpp::Bits1 | Bpp::Bits8 => {
-                if color_table_size > 0 {
-                    Some(color_table_size)
-                } else {
-                    None
-                }
-            }
-            _ => {
-                // Color table is not used at BPP > 8 even if present
-                None
-            }
         };
 
         let row_order = if image_height < 0 {
@@ -127,7 +113,7 @@ impl DibHeader {
                 channel_masks,
                 compression: compression_method,
                 row_order,
-                color_table_size,
+                color_table_num_entries,
             },
         ))
     }

@@ -114,11 +114,12 @@ impl<'a> Header<'a> {
         // DIB header
         let (input, dib_header) = DibHeader::parse(input)?;
 
-        let (input, color_table) = if let Some(color_table_size) = dib_header.color_table_size {
+        let (input, color_table) = if dib_header.color_table_num_entries > 0 {
             match dib_header.bpp {
-                Bpp::Bits1 | Bpp::Bits8 if color_table_size > 0 => {
+                Bpp::Bits1 | Bpp::Bits8 => {
                     // Each color table entry is 4 bytes long
-                    let (input, entries) = take(color_table_size as usize * 4)(input)?;
+                    let (input, entries) =
+                        take(dib_header.color_table_num_entries as usize * 4)(input)?;
 
                     // MSRV: Experiment with slice::as_chunks when it's stabilised
 
