@@ -11,7 +11,7 @@ use crate::{
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct RawPixels<'a, 'b> {
     /// Reference to original BMP image.
-    raw_bmp: &'a RawBmp<'b>,
+    pub(crate) raw_bmp: &'a RawBmp<'b>,
 
     /// Image pixel data as a byte slice, little endian ordering.
     pixel_data: &'b [u8],
@@ -71,38 +71,12 @@ impl Iterator for RawPixels<'_, '_> {
         match self.raw_bmp.color_bpp() {
             Bpp::Bits1 => self.pixel_data.get(byte_idx).map(|byte| {
                 let mask = 0b_1000_0000 >> self.bit_idx % 8;
-
-                let bit = byte & mask != 0;
-
-                if let Some(table) = self.raw_bmp.color_table() {
-                    // Color mapping - look into table for 0/1 mapped color
-                    let bit = bit as usize;
-
-                    // Each color table entry is 4 bytes long
-                    let offset = bit * 4;
-
-                    pixel_value[0] = table[offset + 0];
-                    pixel_value[1] = table[offset + 1];
-                    pixel_value[2] = table[offset + 2];
-                } else {
-                    // No color mapping - use on/off value directly
-                    pixel_value[0] = bit as u8;
-                }
+                pixel_value[0] = (byte & mask != 0) as u8;
             }),
-            Bpp::Bits8 => self.pixel_data.get(byte_idx).map(|byte| {
-                // Color mapping - look into table for mapped color
-                if let Some(table) = self.raw_bmp.color_table() {
-                    // Each color table entry is 4 bytes long
-                    let offset = *byte as usize * 4;
-
-                    pixel_value[0] = table[offset + 0];
-                    pixel_value[1] = table[offset + 1];
-                    pixel_value[2] = table[offset + 2];
-                } else {
-                    // No color mapping - use value directly
-                    pixel_value[0] = *byte
-                }
-            }),
+            Bpp::Bits8 => self
+                .pixel_data
+                .get(byte_idx)
+                .map(|byte| pixel_value[0] = *byte),
             Bpp::Bits16 => self.pixel_data.get(byte_idx..byte_idx + 2).map(|data| {
                 pixel_value[0..2].copy_from_slice(data);
             }),
