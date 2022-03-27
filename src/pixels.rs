@@ -1,5 +1,5 @@
 use crate::{raw_pixels::RawPixels, Bpp, RawPixel};
-use core::marker::PhantomData;
+use core::{convert::TryInto, marker::PhantomData};
 use embedded_graphics::prelude::*;
 
 /// Iterator over the pixels in a BMP image.
@@ -29,7 +29,7 @@ where
     type Item = Pixel<C>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.raw.next().map(|RawPixel { position, color }| {
+        self.raw.next().and_then(|RawPixel { position, color }| {
             let color = match self.raw.raw_bmp.color_bpp() {
                 // 1 and 8 BPP images may use a color table if one is provided
                 Bpp::Bits1 | Bpp::Bits8 => {
@@ -37,14 +37,14 @@ where
 
                     // Each color table entry is 4 bytes long
                     let offset = color as usize * 4;
-                    
+
                     u32::from_le_bytes(table[offset..offset + 4].try_into().unwrap())
                 }
                 // Color table should be ignored for any other bit depth
                 _ => color,
             };
 
-            Pixel(position, C::Raw::from_u32(color).into())
+            Some(Pixel(position, C::Raw::from_u32(color).into()))
         })
     }
 }

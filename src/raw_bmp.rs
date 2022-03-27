@@ -1,3 +1,4 @@
+use core::convert::TryInto;
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
 use crate::{
@@ -105,7 +106,8 @@ impl<'a> RawBmp<'a> {
                 self.pixels().map(|RawPixel { position: _, color }| {
                     let offset = color as usize * 4;
 
-                    let raw = u32::from_le_bytes(color_table[offset..offset+4].try_into().unwrap());
+                    let raw =
+                        u32::from_le_bytes(color_table[offset..offset + 4].try_into().unwrap());
 
                     <<D as DrawTarget>::Color as PixelColor>::Raw::from_u32(raw).into()
                 }),
