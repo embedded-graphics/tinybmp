@@ -118,8 +118,6 @@ impl Header {
                     let (input, entries) =
                         take(dib_header.color_table_num_entries as usize * 4)(input)?;
 
-                    // MSRV: Experiment with slice::as_chunks when it's stabilised
-
                     (input, Some(entries))
                 }
                 _ => {

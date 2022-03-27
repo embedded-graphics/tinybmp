@@ -38,6 +38,7 @@ where
                     // Each color table entry is 4 bytes long
                     let offset = color as usize * 4;
 
+                    // MSRV: Experiment with slice::as_chunks when it's stabilised
                     u32::from_le_bytes(table[offset..offset + 4].try_into().unwrap())
                 }
                 // Color table should be ignored for any other bit depth

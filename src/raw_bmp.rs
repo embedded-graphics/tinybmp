@@ -106,6 +106,7 @@ impl<'a> RawBmp<'a> {
                 self.pixels().map(|RawPixel { position: _, color }| {
                     let offset = color as usize * 4;
 
+                    // MSRV: Experiment with slice::as_chunks when it's stabilised
                     let raw =
                         u32::from_le_bytes(color_table[offset..offset + 4].try_into().unwrap());
 
