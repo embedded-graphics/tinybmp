@@ -13,7 +13,7 @@ pub struct RawBmp<'a> {
     /// Image header.
     header: Header,
 
-    /// Color table for color mapped 1bpp images.
+    /// Color table for color mapped 1bpp or 8bpp images.
     color_table: Option<&'a [u8]>,
 
     /// Image data.
