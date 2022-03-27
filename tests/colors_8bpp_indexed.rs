@@ -6,7 +6,10 @@ fn colors_8bpp_indexed() {
     let bmp = Bmp::<'_, Rgb888>::from_slice(include_bytes!("./colors_8bpp_indexed.bmp"))
         .expect("Failed to parse");
 
-    assert!(bmp.as_raw().color_table().is_some());
+    assert!(
+        !bmp.as_raw().color_table().is_empty(),
+        "there should be a color table for this image"
+    );
 
     let pixels: Vec<u32> = bmp
         .pixels()

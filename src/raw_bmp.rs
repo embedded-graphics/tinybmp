@@ -1,12 +1,11 @@
-use core::convert::TryInto;
-use embedded_graphics::{prelude::*, primitives::Rectangle};
-
 use crate::{
     header::{Bpp, Header},
     pixels::Pixels,
     raw_pixels::RawPixels,
     ParseError, RawPixel,
 };
+use core::convert::TryInto;
+use embedded_graphics::{prelude::*, primitives::Rectangle};
 
 /// A BMP-format bitmap.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
@@ -15,7 +14,7 @@ pub struct RawBmp<'a> {
     header: Header,
 
     /// Color table for color mapped images.
-    color_table: Option<&'a [u8]>,
+    color_table: &'a [u8],
 
     /// Image data.
     image_data: &'a [u8],
@@ -57,7 +56,7 @@ impl<'a> RawBmp<'a> {
     }
 
     /// Gets the raw color table data associated with the image.
-    pub fn color_table(&self) -> Option<&'a [u8]> {
+    pub fn color_table(&self) -> &'a [u8] {
         self.color_table
     }
 
@@ -96,11 +95,9 @@ impl<'a> RawBmp<'a> {
         D: DrawTarget,
         D::Color: From<<D::Color as PixelColor>::Raw>,
     {
-        let color_table = self
-            .color_table
-            .filter(|_| self.color_bpp() == Bpp::Bits1 || self.color_bpp() == Bpp::Bits8);
+        let color_table = self.color_table;
 
-        if let Some(color_table) = color_table {
+        if self.color_bpp() == Bpp::Bits1 || self.color_bpp() == Bpp::Bits8 {
             target.fill_contiguous(
                 &Rectangle::new(Point::zero(), self.size()),
                 self.pixels().map(|RawPixel { position: _, color }| {

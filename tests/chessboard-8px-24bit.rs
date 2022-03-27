@@ -20,7 +20,10 @@ fn chessboard_8px_24bit() {
         }
     );
 
-    assert_eq!(bmp.color_table(), None);
+    assert!(
+        bmp.color_table().is_empty(),
+        "there should be no color table for this image"
+    );
 
     assert_eq!(bmp.image_data().len(), 314 - 122);
 }
@@ -45,7 +48,10 @@ fn chessboard_8px_24bit_truncated_iter() {
         }
     );
 
-    assert_eq!(bmp.color_table(), None);
+    assert!(
+        bmp.color_table().is_empty(),
+        "there should be no color table for this image"
+    );
 
     let pixels: Vec<u32> = bmp.pixels().map(|pixel| pixel.color).collect();
 
