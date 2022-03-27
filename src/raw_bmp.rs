@@ -4,7 +4,7 @@ use crate::{
     header::{Bpp, Header},
     pixels::Pixels,
     raw_pixels::RawPixels,
-    ParseError,
+    ParseError, RawPixel,
 };
 
 /// A BMP-format bitmap.
@@ -95,9 +95,34 @@ impl<'a> RawBmp<'a> {
         D: DrawTarget,
         D::Color: From<<D::Color as PixelColor>::Raw>,
     {
-        target.fill_contiguous(
-            &Rectangle::new(Point::zero(), self.size()),
-            Pixels::new(self.pixels()).map(|Pixel(_, color)| color),
-        )
+        let color_table = self
+            .color_table
+            .filter(|_| self.color_bpp() == Bpp::Bits1 || self.color_bpp() == Bpp::Bits8);
+
+        if let Some(color_table) = color_table {
+            target.fill_contiguous(
+                &Rectangle::new(Point::zero(), self.size()),
+                self.pixels().map(|RawPixel { position: _, color }| {
+                    let offset = color as usize * 4;
+
+                    let raw = u32::from_le_bytes([
+                        color_table[offset + 0],
+                        color_table[offset + 1],
+                        color_table[offset + 2],
+                        color_table[offset + 3],
+                    ]);
+
+                    <<D as embedded_graphics::draw_target::DrawTarget>::Color as PixelColor>::Raw::from_u32(
+                        raw,
+                    )
+                    .into()
+                }),
+            )
+        } else {
+            target.fill_contiguous(
+                &Rectangle::new(Point::zero(), self.size()),
+                Pixels::new(self.pixels()).map(|Pixel(_, color)| color),
+            )
+        }
     }
 }
