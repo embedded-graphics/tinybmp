@@ -31,41 +31,24 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.raw.next().map(|RawPixel { position, color }| {
             let color = match self.raw.raw_bmp.color_bpp() {
-                Bpp::Bits1 => {
-                    // Color mapping - look into table for 0/1 mapped color
-                    if let Some(table) = self.raw.raw_bmp.color_table() {
-                        // Each color table entry is 4 bytes long
-                        let offset = color as usize * 4;
+                // 1 and 8 BPP images may use a color table if one is provided
+                Bpp::Bits1 | Bpp::Bits8 => {
+                    self.raw
+                        .raw_bmp
+                        .color_table()
+                        .map(|table| {
+                            // Each color table entry is 4 bytes long
+                            let offset = color as usize * 4;
 
-                        u32::from_le_bytes([
-                            table[offset + 0],
-                            table[offset + 1],
-                            table[offset + 2],
-                            table[offset + 3],
-                        ])
-                    }
-                    // No color mapping - use on/off value directly
-                    else {
-                        color as u32
-                    }
-                }
-                Bpp::Bits8 => {
-                    // Color mapping - look into table for mapped color
-                    if let Some(table) = self.raw.raw_bmp.color_table() {
-                        // Each color table entry is 4 bytes long
-                        let offset = color as usize * 4;
-
-                        u32::from_le_bytes([
-                            table[offset + 0],
-                            table[offset + 1],
-                            table[offset + 2],
-                            table[offset + 3],
-                        ])
-                    }
-                    // No color mapping - use value directly
-                    else {
-                        color.into()
-                    }
+                            u32::from_le_bytes([
+                                table[offset + 0],
+                                table[offset + 1],
+                                table[offset + 2],
+                                table[offset + 3],
+                            ])
+                        })
+                        // No color mapping - use pixel value directly
+                        .unwrap_or(color)
                 }
                 // Color table should be ignored for any other bit depth
                 _ => color,
