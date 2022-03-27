@@ -13,7 +13,7 @@ pub struct RawBmp<'a> {
     /// Image header.
     header: Header,
 
-    /// Color table for color mapped 1bpp or 8bpp images.
+    /// Color table for color mapped images.
     color_table: Option<&'a [u8]>,
 
     /// Image data.
@@ -55,7 +55,7 @@ impl<'a> RawBmp<'a> {
         self.header.bpp
     }
 
-    /// Get the color table associated with the image.
+    /// Gets the raw color table data associated with the image.
     pub fn color_table(&self) -> Option<&'a [u8]> {
         self.color_table
     }
@@ -105,17 +105,9 @@ impl<'a> RawBmp<'a> {
                 self.pixels().map(|RawPixel { position: _, color }| {
                     let offset = color as usize * 4;
 
-                    let raw = u32::from_le_bytes([
-                        color_table[offset + 0],
-                        color_table[offset + 1],
-                        color_table[offset + 2],
-                        color_table[offset + 3],
-                    ]);
+                    let raw = u32::from_le_bytes(color_table[offset..offset+4].try_into().unwrap());
 
-                    <<D as embedded_graphics::draw_target::DrawTarget>::Color as PixelColor>::Raw::from_u32(
-                        raw,
-                    )
-                    .into()
+                    <<D as DrawTarget>::Color as PixelColor>::Raw::from_u32(raw).into()
                 }),
             )
         } else {

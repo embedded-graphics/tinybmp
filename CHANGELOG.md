@@ -8,7 +8,7 @@
 
 ### Fixed 
 
-- [#19](https://github.com/embedded-graphics/tinybmp/pull/19) Add support for color mapped 1bpp and 8bpp images.
+- [#19](https://github.com/embedded-graphics/tinybmp/pull/19) Added support for color mapped 1bpp and 8bpp images.
 
 ## [0.3.1] - 2021-06-16
 

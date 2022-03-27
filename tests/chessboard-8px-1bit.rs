@@ -42,7 +42,7 @@ fn chessboard_8px_1bit_iter_raw() {
 
     // Imagemagick inverts using a color mapping table which maps a 0 to [255, 255, 255, 0], hence
     // this instead of a simple `1` value.
-    let w: u32 = 1u32;
+    let w = 1u32;
     let b = 0u32;
 
     let expected = vec![
@@ -105,8 +105,8 @@ fn chessboard_8px_1bit_iter() {
 
     // Imagemagick inverts using a color mapping table which maps a 0 to [255, 255, 255, 0], hence
     // this instead of a simple `1` value.
-    let w: u32 = Rgb888::WHITE.into_storage();
-    let b = 0u32;
+    let w = Rgb888::WHITE.into_storage();
+    let b = Rgb888::BLACK.into_storage();
 
     let expected = vec![
         w, w, b, b, w, w, b, b, //
@@ -140,7 +140,7 @@ fn chessboard_8px_1bit_iter_inverted() {
     // Imagemagick inverts using a color mapping table which maps a 0 to [255, 255, 255, 0], hence
     // this instead of a simple `1` value.
     let w = Rgb888::WHITE.into_storage();
-    let b = 0u32;
+    let b = Rgb888::BLACK.into_storage();
 
     let expected = vec![
         b, b, w, w, b, b, w, w, //
