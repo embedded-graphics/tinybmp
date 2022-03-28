@@ -101,7 +101,7 @@ pub struct Header {
 }
 
 impl Header {
-    pub(crate) fn parse(input: &[u8]) -> IResult<&[u8], (Header, &[u8])> {
+    pub(crate) fn parse(input: &[u8]) -> IResult<&[u8], (Header, Option<&[u8]>)> {
         // File header
         let (input, _) = tag("BM")(input)?;
         let (input, file_size) = le_u32(input)?;
@@ -123,8 +123,14 @@ impl Header {
             _ => (),
         }
 
-        // Each color table entry is 4 bytes long
-        let (input, color_table) = take(dib_header.color_table_num_entries as usize * 4)(input)?;
+        let (input, color_table) = if dib_header.color_table_num_entries > 0 {
+            // Each color table entry is 4 bytes long
+            let (input, table) = take(dib_header.color_table_num_entries as usize * 4)(input)?;
+
+            (input, Some(table))
+        } else {
+            (input, None)
+        };
 
         Ok((
             input,

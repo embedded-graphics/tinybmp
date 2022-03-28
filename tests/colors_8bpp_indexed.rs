@@ -7,7 +7,7 @@ fn colors_8bpp_indexed() {
         .expect("Failed to parse");
 
     assert!(
-        !bmp.as_raw().color_table().is_empty(),
+        bmp.as_raw().color_table().is_some(),
         "there should be a color table for this image"
     );
 

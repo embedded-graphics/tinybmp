@@ -21,7 +21,7 @@ fn chessboard_8px_24bit() {
     );
 
     assert!(
-        bmp.color_table().is_empty(),
+        bmp.color_table().is_none(),
         "there should be no color table for this image"
     );
 
@@ -49,7 +49,7 @@ fn chessboard_8px_24bit_truncated_iter() {
     );
 
     assert!(
-        bmp.color_table().is_empty(),
+        bmp.color_table().is_none(),
         "there should be no color table for this image"
     );
 

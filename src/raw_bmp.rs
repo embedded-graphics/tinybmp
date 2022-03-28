@@ -14,7 +14,7 @@ pub struct RawBmp<'a> {
     header: Header,
 
     /// Color table for color mapped images.
-    color_table: &'a [u8],
+    color_table: Option<&'a [u8]>,
 
     /// Image data.
     image_data: &'a [u8],
@@ -56,7 +56,7 @@ impl<'a> RawBmp<'a> {
     }
 
     /// Gets the raw color table data associated with the image.
-    pub fn color_table(&self) -> &'a [u8] {
+    pub fn color_table(&self) -> Option<&'a [u8]> {
         self.color_table
     }
 
@@ -95,26 +95,27 @@ impl<'a> RawBmp<'a> {
         D: DrawTarget,
         D::Color: From<<D::Color as PixelColor>::Raw>,
     {
-        let color_table = self.color_table;
+        match self.color_table {
+            Some(color_table)
+                if self.color_bpp() == Bpp::Bits1 || self.color_bpp() == Bpp::Bits8 =>
+            {
+                target.fill_contiguous(
+                    &Rectangle::new(Point::zero(), self.size()),
+                    self.pixels().map(|RawPixel { position: _, color }| {
+                        let offset = color as usize * 4;
 
-        if self.color_bpp() == Bpp::Bits1 || self.color_bpp() == Bpp::Bits8 {
-            target.fill_contiguous(
-                &Rectangle::new(Point::zero(), self.size()),
-                self.pixels().map(|RawPixel { position: _, color }| {
-                    let offset = color as usize * 4;
+                        // MSRV: Experiment with slice::as_chunks when it's stabilised
+                        let raw =
+                            u32::from_le_bytes(color_table[offset..offset + 4].try_into().unwrap());
 
-                    // MSRV: Experiment with slice::as_chunks when it's stabilised
-                    let raw =
-                        u32::from_le_bytes(color_table[offset..offset + 4].try_into().unwrap());
-
-                    <<D as DrawTarget>::Color as PixelColor>::Raw::from_u32(raw).into()
-                }),
-            )
-        } else {
-            target.fill_contiguous(
+                        <<D as DrawTarget>::Color as PixelColor>::Raw::from_u32(raw).into()
+                    }),
+                )
+            }
+            _ => target.fill_contiguous(
                 &Rectangle::new(Point::zero(), self.size()),
                 Pixels::new(self.pixels()).map(|Pixel(_, color)| color),
-            )
+            ),
         }
     }
 }

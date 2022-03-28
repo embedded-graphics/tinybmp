@@ -156,7 +156,7 @@ where
                 // This check could be improved by using the bit masks available in BMP headers
                 // with version >= 4, but we don't currently parse this information.
             } else if (raw_bmp.color_bpp() == Bpp::Bits1 || raw_bmp.color_bpp() == Bpp::Bits8)
-                && !raw_bmp.color_table().is_empty()
+                && raw_bmp.color_table().is_some()
             {
                 // Allow 1BPP and 8BPP images with color tables to be mapped to other color types.
             } else {
