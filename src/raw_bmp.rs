@@ -95,10 +95,8 @@ impl<'a> RawBmp<'a> {
         D: DrawTarget,
         D::Color: From<<D::Color as PixelColor>::Raw>,
     {
-        match self.color_table {
-            Some(color_table)
-                if self.color_bpp() == Bpp::Bits1 || self.color_bpp() == Bpp::Bits8 =>
-            {
+        if self.color_bpp().bits() <= 8 {
+            if let Some(color_table) = self.color_table {
                 target.fill_contiguous(
                     &Rectangle::new(Point::zero(), self.size()),
                     self.pixels().map(|RawPixel { position: _, color }| {
@@ -111,11 +109,14 @@ impl<'a> RawBmp<'a> {
                         <<D as DrawTarget>::Color as PixelColor>::Raw::from_u32(raw).into()
                     }),
                 )
+            } else {
+                Ok(())
             }
-            _ => target.fill_contiguous(
+        } else {
+            target.fill_contiguous(
                 &Rectangle::new(Point::zero(), self.size()),
                 Pixels::new(self.pixels()).map(|Pixel(_, color)| color),
-            ),
+            )
         }
     }
 }
