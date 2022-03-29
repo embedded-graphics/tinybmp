@@ -5,11 +5,11 @@
 
 mod dib_header;
 
-use crate::header::dib_header::DibHeader;
+use crate::{header::dib_header::DibHeader, ColorTable};
 use embedded_graphics::prelude::*;
 use nom::{
     bytes::complete::{tag, take},
-    combinator::map_opt,
+    combinator::{map, map_opt},
     error::{ErrorKind, ParseError},
     number::complete::{le_u16, le_u32},
     IResult,
@@ -101,7 +101,7 @@ pub struct Header {
 }
 
 impl Header {
-    pub(crate) fn parse(input: &[u8]) -> IResult<&[u8], (Header, Option<&[u8]>)> {
+    pub(crate) fn parse(input: &[u8]) -> IResult<&[u8], (Header, Option<ColorTable<'_>>)> {
         // File header
         let (input, _) = tag("BM")(input)?;
         let (input, file_size) = le_u32(input)?;
@@ -125,7 +125,10 @@ impl Header {
 
         let (input, color_table) = if dib_header.color_table_num_entries > 0 {
             // Each color table entry is 4 bytes long
-            let (input, table) = take(dib_header.color_table_num_entries as usize * 4)(input)?;
+            let (input, table) = map(
+                take(dib_header.color_table_num_entries as usize * 4),
+                |data| ColorTable::new(data),
+            )(input)?;
 
             (input, Some(table))
         } else {

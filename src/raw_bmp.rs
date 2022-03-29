@@ -2,9 +2,8 @@ use crate::{
     header::{Bpp, Header},
     pixels::Pixels,
     raw_pixels::RawPixels,
-    ParseError, RawPixel,
+    ColorTable, ParseError, RawPixel,
 };
-use core::convert::TryInto;
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
 /// A BMP-format bitmap.
@@ -14,7 +13,7 @@ pub struct RawBmp<'a> {
     header: Header,
 
     /// Color table for color mapped images.
-    color_table: Option<&'a [u8]>,
+    color_table: Option<ColorTable<'a>>,
 
     /// Image data.
     image_data: &'a [u8],
@@ -55,9 +54,9 @@ impl<'a> RawBmp<'a> {
         self.header.bpp
     }
 
-    /// Gets the raw color table data associated with the image.
-    pub fn color_table(&self) -> Option<&'a [u8]> {
-        self.color_table
+    /// Gets the color table associated with the image.
+    pub fn color_table(&self) -> Option<&ColorTable<'a>> {
+        self.color_table.as_ref()
     }
 
     /// Returns a slice containing the raw image data.
@@ -99,17 +98,15 @@ impl<'a> RawBmp<'a> {
             if let Some(color_table) = self.color_table {
                 target.fill_contiguous(
                     &Rectangle::new(Point::zero(), self.size()),
-                    self.pixels().map(|RawPixel { position: _, color }| {
-                        let offset = color as usize * 4;
-
-                        // MSRV: Experiment with slice::as_chunks when it's stabilised
-                        let raw =
-                            u32::from_le_bytes(color_table[offset..offset + 4].try_into().unwrap());
-
-                        <<D as DrawTarget>::Color as PixelColor>::Raw::from_u32(raw).into()
+                    self.pixels().map(|RawPixel { color, .. }| {
+                        color_table
+                            .get_raw::<<<D as DrawTarget>::Color as PixelColor>::Raw>(color)
+                            .unwrap_or_else(|| RawData::from_u32(0)) //TODO: how should invalid color indices be handled
+                            .into()
                     }),
                 )
             } else {
+                // Don't try to draw anything if the color table is missing.
                 Ok(())
             }
         } else {

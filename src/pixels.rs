@@ -1,5 +1,5 @@
-use crate::{raw_pixels::RawPixels, Bpp, RawPixel};
-use core::{convert::TryInto, marker::PhantomData};
+use crate::{raw_pixels::RawPixels, RawPixel};
+use core::marker::PhantomData;
 use embedded_graphics::prelude::*;
 
 /// Iterator over the pixels in a BMP image.
@@ -29,23 +29,19 @@ where
     type Item = Pixel<C>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.raw.next().and_then(|RawPixel { position, color }| {
-            let color = match self.raw.raw_bmp.color_bpp() {
-                // 1 and 8 BPP images may use a color table if one is provided
-                Bpp::Bits1 | Bpp::Bits8 => {
-                    let table = self.raw.raw_bmp.color_table()?;
+        let RawPixel { position, color } = self.raw.next()?;
 
-                    // Each color table entry is 4 bytes long
-                    let offset = color as usize * 4;
+        let color = if self.raw.raw_bmp.color_bpp().bits() <= 8 {
+            // Return an empty iterator if no color table is present.
+            let color_table = self.raw.raw_bmp.color_table()?;
 
-                    // MSRV: Experiment with slice::as_chunks when it's stabilised
-                    u32::from_le_bytes(table[offset..offset + 4].try_into().unwrap())
-                }
-                // Color table should be ignored for any other bit depth
-                _ => color,
-            };
+            color_table
+                .get(color)
+                .unwrap_or_else(|| C::Raw::from_u32(0).into()) //TODO: how should invalid color indices be handled
+        } else {
+            C::Raw::from_u32(color).into()
+        };
 
-            Some(Pixel(position, C::Raw::from_u32(color).into()))
-        })
+        Some(Pixel(position, color))
     }
 }

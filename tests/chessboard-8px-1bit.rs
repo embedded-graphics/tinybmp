@@ -1,5 +1,5 @@
 use embedded_graphics::{
-    pixelcolor::{BinaryColor, Rgb888},
+    pixelcolor::{raw::RawU32, BinaryColor, Rgb888},
     prelude::*,
 };
 use tinybmp::{Bmp, Bpp, Header, RawBmp, RowOrder};
@@ -22,10 +22,11 @@ fn chessboard_8px_1bit() {
         }
     );
 
-    assert_eq!(
-        bmp.color_table(),
-        Some(&[0u8, 0, 0, 0, 255, 255, 255, 255][..])
-    );
+    let color_table = bmp.color_table().unwrap();
+    assert_eq!(color_table.len(), 2);
+    assert_eq!(color_table.get_raw(0), Some(RawU32::new(0x00000000)));
+    assert_eq!(color_table.get_raw(1), Some(RawU32::new(0xFFFFFFFF)));
+    assert_eq!(color_table.get_raw(2), Option::<RawU32>::None);
 
     assert_eq!(bmp.image_data().len(), 94 - 62);
 }
