@@ -1,5 +1,4 @@
 use core::convert::TryInto;
-
 use embedded_graphics::prelude::{PixelColor, RawData};
 
 /// Color table.
@@ -35,7 +34,7 @@ impl<'a> ColorTable<'a> {
     /// Returns a color table entry.
     ///
     /// `None` is returned if `index` is out of bounds.
-    pub fn get<C: PixelColor + From<C::Raw>>(&self, index: u32) -> Option<C> {
+    pub fn get<C: PixelColor + From<<C as PixelColor>::Raw>>(&self, index: u32) -> Option<C> {
         self.get_raw::<C::Raw>(index).map(Into::into)
     }
 }
