@@ -2,10 +2,10 @@
 //!
 //! Usage: cargo run --example display -- COLOR_TYPE BMP_IMAGE
 
-use clap::{Parser, ArgEnum};
+use clap::{ArgEnum, Parser};
 use embedded_graphics::{
     image::Image,
-    pixelcolor::{BinaryColor, Gray8, Rgb888, Rgb555, Rgb565},
+    pixelcolor::{BinaryColor, Gray8, Rgb555, Rgb565, Rgb888},
     prelude::*,
 };
 use embedded_graphics_simulator::{OutputSettingsBuilder, SimulatorDisplay, Window};
@@ -49,7 +49,13 @@ where
 
 fn draw_dynamic_bmp<C>(data: &[u8]) -> SimulatorDisplay<Rgb888>
 where
-    C: PixelColor + From<C::Raw> + Into<Rgb888> + From<Rgb565> + From<Rgb555> + From<Rgb888> + From<Gray8>,
+    C: PixelColor
+        + From<C::Raw>
+        + Into<Rgb888>
+        + From<Rgb565>
+        + From<Rgb555>
+        + From<Rgb888>
+        + From<Gray8>,
 {
     let bmp = DynamicBmp::<C>::from_slice(&data).unwrap();
 
@@ -61,7 +67,6 @@ where
 
     display
 }
-
 
 fn main() {
     let args = Args::parse();
