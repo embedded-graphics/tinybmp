@@ -25,3 +25,7 @@ name = "embedded_graphics"
 [dependencies]
 embedded-graphics = "0.7.1"
 nom = { version = "6.0.1", default-features = false }
+
+[dev-dependencies]
+clap = { version = "3.1.6", features = ["derive"] }
+embedded-graphics-simulator = "0.3.0"
