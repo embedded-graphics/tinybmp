@@ -121,7 +121,6 @@ use core::marker::PhantomData;
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
 pub use crate::{
-    color_table::ColorTable,
     dynamic_bmp::DynamicBmp,
     header::{Bpp, ChannelMasks, Header, RowOrder},
     pixels::Pixels,

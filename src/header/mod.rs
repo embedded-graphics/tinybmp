@@ -5,7 +5,7 @@
 
 mod dib_header;
 
-use crate::{header::dib_header::DibHeader, ColorTable};
+use crate::{color_table::ColorTable, header::dib_header::DibHeader};
 use embedded_graphics::prelude::*;
 use nom::{
     bytes::complete::{tag, take},

@@ -1,8 +1,9 @@
 use crate::{
+    color_table::ColorTable,
     header::{Bpp, Header},
     pixels::Pixels,
     raw_pixels::RawPixels,
-    ColorTable, ParseError, RawPixel,
+    ParseError, RawPixel,
 };
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
@@ -55,7 +56,7 @@ impl<'a> RawBmp<'a> {
     }
 
     /// Gets the color table associated with the image.
-    pub fn color_table(&self) -> Option<&ColorTable<'a>> {
+    pub(crate) fn color_table(&self) -> Option<&ColorTable<'a>> {
         self.color_table.as_ref()
     }
 
