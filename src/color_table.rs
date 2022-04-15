@@ -41,6 +41,8 @@ impl<'a> ColorTable<'a> {
     }
 }
 
+// TODO: When the color table is made public, the tests below should be moved into the corresponding
+// files under `tests/`.
 #[cfg(test)]
 mod tests {
     use crate::{Bmp, RawBmp};
