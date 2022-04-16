@@ -15,7 +15,7 @@ fn chessboard_8px_color_16bit() {
             image_size: Size::new(8, 8),
             image_data_len: 128,
             channel_masks: Some(ChannelMasks::RGB565),
-            row_order: RowOrder::BottomUp
+            row_order: RowOrder::BottomUp,
         }
     );
 

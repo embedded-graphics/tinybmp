@@ -1,10 +1,11 @@
 use embedded_graphics::{prelude::*, primitives::Rectangle};
 
 use crate::{
+    color_table::ColorTable,
     header::{Bpp, Header},
     pixels::Pixels,
     raw_pixels::RawPixels,
-    ParseError,
+    ParseError, RawPixel,
 };
 
 /// A BMP-format bitmap.
@@ -12,6 +13,9 @@ use crate::{
 pub struct RawBmp<'a> {
     /// Image header.
     header: Header,
+
+    /// Color table for color mapped images.
+    color_table: Option<ColorTable<'a>>,
 
     /// Image data.
     image_data: &'a [u8],
@@ -30,11 +34,16 @@ impl<'a> RawBmp<'a> {
     /// [`from_slice`]: #method.from_slice
     /// [`pixels`]: #method.pixels
     pub fn from_slice(bytes: &'a [u8]) -> Result<Self, ParseError> {
-        let (_remaining, header) = Header::parse(bytes).map_err(|_| ParseError::Header)?;
+        let (_remaining, (header, color_table)) =
+            Header::parse(bytes).map_err(|_| ParseError::Header)?;
 
         let image_data = &bytes[header.image_data_start..];
 
-        Ok(Self { header, image_data })
+        Ok(Self {
+            header,
+            color_table,
+            image_data,
+        })
     }
 
     /// Returns the size of this image in pixels.
@@ -45,6 +54,11 @@ impl<'a> RawBmp<'a> {
     /// Returns the BPP (bits per pixel) for this image.
     pub fn color_bpp(&self) -> Bpp {
         self.header.bpp
+    }
+
+    /// Gets the color table associated with the image.
+    pub(crate) fn color_table(&self) -> Option<&ColorTable<'a>> {
+        self.color_table.as_ref()
     }
 
     /// Returns a slice containing the raw image data.
@@ -82,9 +96,26 @@ impl<'a> RawBmp<'a> {
         D: DrawTarget,
         D::Color: From<<D::Color as PixelColor>::Raw>,
     {
-        target.fill_contiguous(
-            &Rectangle::new(Point::zero(), self.size()),
-            Pixels::new(self.pixels()).map(|Pixel(_, color)| color),
-        )
+        if self.color_bpp().bits() <= 8 {
+            if let Some(color_table) = self.color_table {
+                target.fill_contiguous(
+                    &Rectangle::new(Point::zero(), self.size()),
+                    self.pixels().map(|RawPixel { color, .. }| {
+                        color_table
+                            .get_raw::<<<D as DrawTarget>::Color as PixelColor>::Raw>(color)
+                            .unwrap_or_else(|| RawData::from_u32(0)) //TODO: how should invalid color indices be handled
+                            .into()
+                    }),
+                )
+            } else {
+                // Don't try to draw anything if the color table is missing.
+                Ok(())
+            }
+        } else {
+            target.fill_contiguous(
+                &Rectangle::new(Point::zero(), self.size()),
+                Pixels::new(self.pixels()).map(|Pixel(_, color)| color),
+            )
+        }
     }
 }

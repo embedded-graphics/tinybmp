@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 use embedded_graphics::prelude::*;
 
-use crate::raw_pixels::RawPixels;
+use crate::{raw_pixels::RawPixels, RawPixel};
 
 /// Iterator over the pixels in a BMP image.
 ///
@@ -30,8 +30,19 @@ where
     type Item = Pixel<C>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.raw
-            .next()
-            .map(|p| Pixel(p.position, C::Raw::from_u32(p.color).into()))
+        let RawPixel { position, color } = self.raw.next()?;
+
+        let color = if self.raw.raw_bmp.color_bpp().bits() <= 8 {
+            // Return an empty iterator if no color table is present.
+            let color_table = self.raw.raw_bmp.color_table()?;
+
+            color_table
+                .get(color)
+                .unwrap_or_else(|| C::Raw::from_u32(0).into()) //TODO: how should invalid color indices be handled
+        } else {
+            C::Raw::from_u32(color).into()
+        };
+
+        Some(Pixel(position, color))
     }
 }

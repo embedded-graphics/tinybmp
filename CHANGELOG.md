@@ -6,6 +6,12 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [0.3.2] - 2022-04-16
+
+### Added 
+
+- [#19](https://github.com/embedded-graphics/tinybmp/pull/19) Added support for color mapped 1bpp and 8bpp images. This change now also requires 1bpp and 8bpp images to contain a color table.
+
 ## [0.3.1] - 2021-06-16
 
 ### Changed
@@ -119,7 +125,8 @@
 - Release `tinybmp` crate to crates.io
 
 <!-- next-url -->
-[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.1...HEAD
+[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.1...v0.3.2
 
 [0.3.1]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.0-beta.2...v0.3.0
