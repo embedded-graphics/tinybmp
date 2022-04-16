@@ -3,11 +3,15 @@
 //! Information gleaned from [wikipedia](https://en.wikipedia.org/wiki/BMP_file_format) and
 //! [this website](http://paulbourke.net/dataformats/bmp/)
 
+mod dib_header;
+
+use crate::{color_table::ColorTable, header::dib_header::DibHeader};
 use embedded_graphics::prelude::*;
 use nom::{
-    bytes::complete::tag,
-    combinator::map_opt,
-    number::complete::{le_i32, le_u16, le_u32},
+    bytes::complete::{tag, take},
+    combinator::{map, map_opt},
+    error::{ErrorKind, ParseError},
+    number::complete::{le_u16, le_u32},
     IResult,
 };
 
@@ -97,67 +101,54 @@ pub struct Header {
 }
 
 impl Header {
-    pub(crate) fn parse(input: &[u8]) -> IResult<&[u8], Header> {
+    pub(crate) fn parse(input: &[u8]) -> IResult<&[u8], (Header, Option<ColorTable<'_>>)> {
+        // File header
         let (input, _) = tag("BM")(input)?;
         let (input, file_size) = le_u32(input)?;
         let (input, _reserved_1) = le_u16(input)?;
         let (input, _reserved_2) = le_u16(input)?;
         let (input, image_data_start) = le_u32(input)?;
-        let (input, header_size) = le_u32(input)?;
-        let (input, image_width) = le_u32(input)?;
-        let (input, image_height) = le_i32(input)?;
-        let (input, _color_planes) = le_u16(input)?;
-        let (input, bpp) = Bpp::parse(input)?;
-        let (input, compression_method) = CompressionMethod::parse(input)?;
-        let (input, image_data_len) = le_u32(input)?;
 
-        let row_order = if image_height < 0 {
-            RowOrder::TopDown
-        } else {
-            RowOrder::BottomUp
-        };
+        // DIB header
+        let (input, dib_header) = DibHeader::parse(input)?;
 
-        let (input, channel_masks) = if compression_method == CompressionMethod::Bitfields {
-            // BMP header versions can be distinguished by the header length.
-            // The color bit masks are only included in headers with at least version 3.
-            if header_size >= 56 {
-                let (input, _pels_per_meter_x) = le_u32(input)?;
-                let (input, _pels_per_meter_y) = le_u32(input)?;
-                let (input, _clr_used) = le_u32(input)?;
-                let (input, _clr_important) = le_u32(input)?;
-                let (input, mask_red) = le_u32(input)?;
-                let (input, mask_green) = le_u32(input)?;
-                let (input, mask_blue) = le_u32(input)?;
-                let (input, mask_alpha) = le_u32(input)?;
-
-                (
+        match dib_header.bpp {
+            // Images with BPP <= 8 MUST include a color table
+            Bpp::Bits1 | Bpp::Bits8 if dib_header.color_table_num_entries == 0 => {
+                return Err(nom::Err::Failure(nom::error::Error::from_error_kind(
                     input,
-                    Some(ChannelMasks {
-                        red: mask_red,
-                        green: mask_green,
-                        blue: mask_blue,
-                        alpha: mask_alpha,
-                    }),
-                )
-            } else {
-                // TODO: this should probably be an error
-                (input, None)
+                    ErrorKind::LengthValue,
+                )));
             }
+            _ => (),
+        }
+
+        let (input, color_table) = if dib_header.color_table_num_entries > 0 {
+            // Each color table entry is 4 bytes long
+            let (input, table) = map(
+                take(dib_header.color_table_num_entries as usize * 4),
+                |data| ColorTable::new(data),
+            )(input)?;
+
+            (input, Some(table))
         } else {
             (input, None)
         };
 
         Ok((
             input,
-            Header {
-                file_size,
-                image_data_start: image_data_start as usize,
-                image_size: Size::new(image_width, image_height.abs() as u32),
-                image_data_len,
-                bpp,
-                channel_masks,
-                row_order,
-            },
+            (
+                Header {
+                    file_size,
+                    image_data_start: image_data_start as usize,
+                    image_size: dib_header.image_size,
+                    image_data_len: dib_header.image_data_len,
+                    bpp: dib_header.bpp,
+                    channel_masks: dib_header.channel_masks,
+                    row_order: dib_header.row_order,
+                },
+                color_table,
+            ),
         ))
     }
 }

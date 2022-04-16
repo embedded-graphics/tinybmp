@@ -6,6 +6,10 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Added 
+
+- [#19](https://github.com/embedded-graphics/tinybmp/pull/19) Added support for color mapped 1bpp and 8bpp images. This change now also requires 1bpp and 8bpp images to contain a color table.
+
 ## [0.3.1] - 2021-06-16
 
 ### Changed

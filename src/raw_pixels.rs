@@ -11,7 +11,7 @@ use crate::{
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct RawPixels<'a, 'b> {
     /// Reference to original BMP image.
-    raw_bmp: &'a RawBmp<'b>,
+    pub(crate) raw_bmp: &'a RawBmp<'b>,
 
     /// Image pixel data as a byte slice, little endian ordering.
     pixel_data: &'b [u8],
