@@ -1,3 +1,5 @@
+use embedded_graphics::{prelude::*, primitives::Rectangle};
+
 use crate::{
     color_table::ColorTable,
     header::{Bpp, Header},
@@ -5,7 +7,6 @@ use crate::{
     raw_pixels::RawPixels,
     ParseError, RawPixel,
 };
-use embedded_graphics::{prelude::*, primitives::Rectangle};
 
 /// A BMP-format bitmap.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
