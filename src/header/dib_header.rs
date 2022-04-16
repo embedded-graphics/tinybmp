@@ -66,7 +66,7 @@ impl DibHeader {
         let (dib_header_data, _pels_per_meter_x) = le_u32(dib_header_data)?;
         let (dib_header_data, _pels_per_meter_y) = le_u32(dib_header_data)?;
         let (dib_header_data, colors_used) = le_u32(dib_header_data)?;
-        let (dib_header_data, colors_important) = le_u32(dib_header_data)?;
+        let (dib_header_data, _colors_important) = le_u32(dib_header_data)?;
 
         let (_dib_header_data, channel_masks) = if header_type.is_at_least(HeaderType::V3)
             && compression_method == CompressionMethod::Bitfields
@@ -89,16 +89,14 @@ impl DibHeader {
             (dib_header_data, None)
         };
 
-        // Number of colors in the color table. If the specific count is zero, the entire color
-        // space should be used.
-        let color_table_num_entries: u32 = if colors_important == 0 {
-            0
-        } else {
-            if colors_used == 0 {
+        let color_table_num_entries: u32 = if colors_used == 0 {
+            if bpp.bits() < 16 {
                 bpp.bits().pow(2).into()
             } else {
-                colors_used
+                0
             }
+        } else {
+            colors_used
         };
 
         let row_order = if image_height < 0 {
