@@ -1,6 +1,8 @@
 //! This example displays BMP images using the embedded-graphics simulator.
 //!
-//! Usage: cargo run --example display -- COLOR_TYPE BMP_IMAGE
+//! Basic usage: `cargo run --example display -- COLOR_TYPE BMP_IMAGE`
+//!
+//! More usage and arguments can be listed by running `cargo run --example display -- --help`
 
 use clap::{ArgEnum, Parser};
 use embedded_graphics::{
