@@ -34,10 +34,11 @@ impl<'a> RawBmp<'a> {
     /// [`from_slice`]: #method.from_slice
     /// [`pixels`]: #method.pixels
     pub fn from_slice(bytes: &'a [u8]) -> Result<Self, ParseError> {
-        let (_remaining, (header, color_table)) =
-            Header::parse(bytes).map_err(|_| ParseError::Header)?;
+        let (_remaining, (header, color_table)) = Header::parse(bytes)?;
 
-        let image_data = &bytes[header.image_data_start..];
+        let image_data = &bytes
+            .get(header.image_data_start..)
+            .ok_or(ParseError::UnexpectedEndOfFile)?;
 
         Ok(Self {
             header,

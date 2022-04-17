@@ -113,6 +113,7 @@
 mod color_table;
 mod dynamic_bmp;
 mod header;
+mod parser;
 mod pixels;
 mod raw_bmp;
 mod raw_pixels;
@@ -230,4 +231,23 @@ pub enum ParseError {
 
     /// The image format isn't supported by `DynamicBmp`.
     UnsupportedDynamicBmpFormat,
+
+    /// Unexpected end of file.
+    UnexpectedEndOfFile,
+
+    /// Invalid file signatures.
+    ///
+    /// BMP files must start with `BM`.
+    InvalidFileSignature,
+
+    /// Missing color table.
+    ///
+    /// Images with <= 8 BPP must contain a color table.
+    MissingColorTable,
+
+    /// Unsupported compression method.
+    UnsupportedCompressionMethod(u32),
+
+    /// Unsupported header length.
+    UnsupportedHeaderLength(u32),
 }

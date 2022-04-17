@@ -3,16 +3,15 @@
 //! Information gleaned from [wikipedia](https://en.wikipedia.org/wiki/BMP_file_format) and
 //! [this website](http://paulbourke.net/dataformats/bmp/)
 
+use embedded_graphics::prelude::*;
+
 mod dib_header;
 
-use crate::{color_table::ColorTable, header::dib_header::DibHeader};
-use embedded_graphics::prelude::*;
-use nom::{
-    bytes::complete::{tag, take},
-    combinator::{map, map_opt},
-    error::{ErrorKind, ParseError},
-    number::complete::{le_u16, le_u32},
-    IResult,
+use crate::{
+    color_table::ColorTable,
+    header::dib_header::DibHeader,
+    parser::{le_u16, le_u32, take, take_slice},
+    ParseError,
 };
 
 /// Bits per pixel.
@@ -48,19 +47,19 @@ impl Default for RowOrder {
 }
 
 impl Bpp {
-    fn new(value: u16) -> Option<Self> {
-        Some(match value {
+    fn new(value: u16) -> Result<Self, ParseError> {
+        Ok(match value {
             1 => Self::Bits1,
             8 => Self::Bits8,
             16 => Self::Bits16,
             24 => Self::Bits24,
             32 => Self::Bits32,
-            _ => return None,
+            _ => return Err(ParseError::UnsupportedBpp(value)),
         })
     }
 
-    fn parse(input: &[u8]) -> IResult<&[u8], Self> {
-        map_opt(le_u16, Bpp::new)(input)
+    fn parse(input: &[u8]) -> Result<(&[u8], Self), ParseError> {
+        le_u16(input).and_then(|(input, value)| Ok((input, Self::new(value)?)))
     }
 
     /// Returns the number of bits.
@@ -101,9 +100,15 @@ pub struct Header {
 }
 
 impl Header {
-    pub(crate) fn parse(input: &[u8]) -> IResult<&[u8], (Header, Option<ColorTable<'_>>)> {
+    pub(crate) fn parse(
+        input: &[u8],
+    ) -> Result<(&[u8], (Header, Option<ColorTable<'_>>)), ParseError> {
         // File header
-        let (input, _) = tag("BM")(input)?;
+        let (input, magic) = take::<2>(input)?;
+        if &magic != b"BM" {
+            return Err(ParseError::InvalidFileSignature);
+        }
+
         let (input, file_size) = le_u32(input)?;
         let (input, _reserved_1) = le_u16(input)?;
         let (input, _reserved_2) = le_u16(input)?;
@@ -115,22 +120,16 @@ impl Header {
         match dib_header.bpp {
             // Images with BPP <= 8 MUST include a color table
             Bpp::Bits1 | Bpp::Bits8 if dib_header.color_table_num_entries == 0 => {
-                return Err(nom::Err::Failure(nom::error::Error::from_error_kind(
-                    input,
-                    ErrorKind::LengthValue,
-                )));
+                return Err(ParseError::MissingColorTable);
             }
             _ => (),
         }
 
         let (input, color_table) = if dib_header.color_table_num_entries > 0 {
             // Each color table entry is 4 bytes long
-            let (input, table) = map(
-                take(dib_header.color_table_num_entries as usize * 4),
-                |data| ColorTable::new(data),
-            )(input)?;
-
-            (input, Some(table))
+            let (input, table) =
+                take_slice(input, dib_header.color_table_num_entries as usize * 4)?;
+            (input, Some(ColorTable::new(table)))
         } else {
             (input, None)
         };
@@ -199,15 +198,15 @@ pub enum CompressionMethod {
 }
 
 impl CompressionMethod {
-    fn new(value: u32) -> Option<Self> {
-        Some(match value {
+    fn new(value: u32) -> Result<Self, ParseError> {
+        Ok(match value {
             0 => Self::Rgb,
             3 => Self::Bitfields,
-            _ => return None,
+            _ => return Err(ParseError::UnsupportedCompressionMethod(value)),
         })
     }
 
-    fn parse(input: &[u8]) -> IResult<&[u8], Self> {
-        map_opt(le_u32, Self::new)(input)
+    fn parse(input: &[u8]) -> Result<(&[u8], Self), ParseError> {
+        le_u32(input).and_then(|(input, value)| Ok((input, Self::new(value)?)))
     }
 }
