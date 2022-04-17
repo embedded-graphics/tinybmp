@@ -1,19 +1,17 @@
 //! Device Independent Bitmap (DIB) header.
 
-use crate::{header::CompressionMethod, Bpp, ChannelMasks, RowOrder};
 use embedded_graphics::geometry::Size;
-use nom::{
-    combinator::map_opt,
-    error::{ErrorKind, ParseError},
-    multi::length_data,
-    number::complete::{le_i32, le_u16, le_u32},
-    IResult,
+
+use crate::{
+    header::CompressionMethod,
+    parser::{le_i32, le_u16, le_u32, take_slice},
+    Bpp, ChannelMasks, ParseError, RowOrder,
 };
 
-const DIB_INFO_HEADER_SIZE: usize = 40;
-const DIB_V3_HEADER_SIZE: usize = 56;
-const DIB_V4_HEADER_SIZE: usize = 108;
-const DIB_V5_HEADER_SIZE: usize = 124;
+const DIB_INFO_HEADER_SIZE: u32 = 40;
+const DIB_V3_HEADER_SIZE: u32 = 56;
+const DIB_V4_HEADER_SIZE: u32 = 108;
+const DIB_V5_HEADER_SIZE: u32 = 124;
 
 /// Device Independent Bitmap (DIB) header.
 #[derive(Debug)]
@@ -30,25 +28,24 @@ pub struct DibHeader {
 }
 
 impl DibHeader {
-    pub fn parse(input: &[u8]) -> IResult<&[u8], Self> {
+    pub fn parse(input: &[u8]) -> Result<(&[u8], Self), ParseError> {
+        let (input, dib_header_length) = le_u32(input)?;
+
         // The header size in the BMP includes its own u32, so we strip it out by subtracting 4
         // bytes to get the right final offset to the end of the header.
-        let (input, dib_header_data) =
-            length_data(map_opt(le_u32, |len| len.checked_sub(4)))(input)?;
+        let data_length = dib_header_length
+            .checked_sub(4)
+            .ok_or(ParseError::UnsupportedHeaderLength(dib_header_length))?;
+        let (input, dib_header_data) = take_slice(input, data_length as usize)?;
 
         // Add 4 back on so the constants remain the correct size relative to the BMP
         // documentation/specs.
-        let header_type = match dib_header_data.len() + 4 {
+        let header_type = match dib_header_length {
             DIB_V3_HEADER_SIZE => HeaderType::V3,
             DIB_V4_HEADER_SIZE => HeaderType::V4,
             DIB_V5_HEADER_SIZE => HeaderType::V5,
             DIB_INFO_HEADER_SIZE => HeaderType::Info,
-            _ => {
-                return Err(nom::Err::Failure(nom::error::Error::from_error_kind(
-                    dib_header_data,
-                    ErrorKind::LengthValue,
-                )))
-            }
+            _ => return Err(ParseError::UnsupportedHeaderLength(dib_header_length)),
         };
 
         // Fields common to all DIB variants
