@@ -1,4 +1,5 @@
 use core::marker::PhantomData;
+
 use embedded_graphics::{
     pixelcolor::{Gray8, PixelColor, Rgb555, Rgb565, Rgb888},
     prelude::*,

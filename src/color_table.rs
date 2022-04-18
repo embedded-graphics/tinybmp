@@ -1,5 +1,6 @@
 use core::convert::TryInto;
-use embedded_graphics::prelude::{PixelColor, RawData};
+
+use embedded_graphics::prelude::*;
 
 /// Color table.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
