@@ -46,7 +46,7 @@ impl<'a> ColorTable<'a> {
 #[cfg(test)]
 mod tests {
     use crate::{Bmp, RawBmp};
-    use embedded_graphics::pixelcolor::{raw::RawU32, Rgb888};
+    use embedded_graphics::pixelcolor::{raw::RawU32, BinaryColor, Rgb888};
 
     #[test]
     fn chessboard_8px_1bit() {
@@ -92,6 +92,21 @@ mod tests {
         assert!(
             bmp.as_raw().color_table().is_some(),
             "there should be a color table for this image"
+        );
+    }
+
+    #[test]
+    // A regression was found from the original fix, described in <https://github.com/embedded-graphics/tinybmp/issues/18#issuecomment-1101600500>
+    fn issue_18() {
+        let bmp = Bmp::<'_, BinaryColor>::from_slice(include_bytes!(
+            "../tests/chessboard-8px-1bit-0colors.bmp"
+        ))
+        .expect("Failed to parse");
+
+        assert_eq!(bmp.as_raw().color_table().unwrap().len(), 2);
+        assert_eq!(
+            bmp.as_raw().color_table().unwrap().data,
+            &[0, 0, 0, 0, 255, 255, 255, 0]
         );
     }
 }

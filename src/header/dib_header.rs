@@ -91,7 +91,7 @@ impl DibHeader {
 
         let color_table_num_entries: u32 = if colors_used == 0 {
             if bpp.bits() < 16 {
-                bpp.bits().pow(2).into()
+                2u32.pow(bpp.bits().into())
             } else {
                 0
             }
