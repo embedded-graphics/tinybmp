@@ -26,6 +26,10 @@ name = "embedded_graphics"
 name = "parse"
 harness = false
 
+[[bench]]
+name = "draw"
+harness = false
+
 [dependencies]
 embedded-graphics = "0.7.1"
 
