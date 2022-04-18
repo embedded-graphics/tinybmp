@@ -35,8 +35,6 @@ fn chessboard_8px_1bit_iter_raw() {
     // 8px x 8px image. Check that iterator returns all pixels in it
     assert_eq!(pixels.len(), 8 * 8);
 
-    // Imagemagick inverts using a color mapping table which maps a 0 to [255, 255, 255, 0], hence
-    // this instead of a simple `1` value.
     let w = 1u32;
     let b = 0u32;
 
@@ -66,8 +64,6 @@ fn chessboard_8px_1bit_iter_inverted_raw() {
     // 8px x 8px image. Check that iterator returns all pixels in it
     assert_eq!(pixels.len(), 8 * 8);
 
-    // Imagemagick inverts using a color mapping table which maps a 0 to [255, 255, 255, 0], hence
-    // this instead of a simple `1` value.
     let w = 1u32;
     let b = 0u32;
 
@@ -167,8 +163,6 @@ fn chessboard_8px_1bit_iter_inverted_binarycolor() {
     // 8px x 8px image. Check that iterator returns all pixels in it
     assert_eq!(pixels.len(), 8 * 8);
 
-    // Imagemagick inverts using a color mapping table which maps a 0 to [255, 255, 255, 0], hence
-    // this instead of a simple `1` value.
     let w = 1u32;
     let b = 0u32;
 
