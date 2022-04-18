@@ -110,6 +110,10 @@
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
 
+use core::marker::PhantomData;
+
+use embedded_graphics::{prelude::*, primitives::Rectangle};
+
 mod color_table;
 mod dynamic_bmp;
 mod header;
@@ -117,9 +121,6 @@ mod parser;
 mod pixels;
 mod raw_bmp;
 mod raw_pixels;
-
-use core::marker::PhantomData;
-use embedded_graphics::{prelude::*, primitives::Rectangle};
 
 pub use crate::{
     dynamic_bmp::DynamicBmp,

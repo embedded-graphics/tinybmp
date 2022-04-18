@@ -5,14 +5,15 @@
 
 use embedded_graphics::prelude::*;
 
-mod dib_header;
-
 use crate::{
     color_table::ColorTable,
-    header::dib_header::DibHeader,
     parser::{le_u16, le_u32, take, take_slice},
     ParseError,
 };
+
+mod dib_header;
+
+use dib_header::DibHeader;
 
 /// Bits per pixel.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]

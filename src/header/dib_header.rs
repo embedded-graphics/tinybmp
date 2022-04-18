@@ -1,6 +1,6 @@
 //! Device Independent Bitmap (DIB) header.
 
-use embedded_graphics::geometry::Size;
+use embedded_graphics::prelude::*;
 
 use crate::{
     header::CompressionMethod,
