@@ -6,6 +6,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [0.3.3] - 2022-04-18
+
 ### Fixed
 
 - [#25](https://github.com/embedded-graphics/tinybmp/pull/25) Fixed a bug in the new color table support added in v0.3.2 where the color table length was incorrectly calculated.
@@ -129,7 +131,8 @@
 - Release `tinybmp` crate to crates.io
 
 <!-- next-url -->
-[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.2...HEAD
+[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.1...v0.3.2
 
 [0.3.1]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.0...v0.3.1
