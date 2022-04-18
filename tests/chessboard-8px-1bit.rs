@@ -185,3 +185,34 @@ fn chessboard_8px_1bit_iter_inverted_binarycolor() {
 
     assert_eq!(pixels, expected);
 }
+
+#[test]
+fn chessboard_8px_1bit_0colors() {
+    let bmp =
+        Bmp::<'_, BinaryColor>::from_slice(include_bytes!("./chessboard-8px-1bit-0colors.bmp"))
+            .expect("Failed to parse");
+
+    let pixels: Vec<u32> = bmp
+        .pixels()
+        .map(|Pixel(_pos, color)| color.into_storage().into())
+        .collect();
+
+    // 8px x 8px image. Check that iterator returns all pixels in it
+    assert_eq!(pixels.len(), 8 * 8);
+
+    let w = 1u32;
+    let b = 0u32;
+
+    let expected = vec![
+        w, w, b, b, w, w, b, b, //
+        w, w, b, b, w, w, b, b, //
+        b, b, w, w, b, b, w, w, //
+        b, b, w, w, b, b, w, w, //
+        w, w, b, b, w, w, b, b, //
+        w, w, b, b, w, w, b, b, //
+        b, b, w, w, b, b, w, w, //
+        b, b, w, w, b, b, w, w, //
+    ];
+
+    assert_eq!(pixels, expected);
+}

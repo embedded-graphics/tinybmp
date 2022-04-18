@@ -6,6 +6,10 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Fixed
+
+- [#25](https://github.com/embedded-graphics/tinybmp/pull/25) Fixed a bug in the new color table support added in v0.3.2 where the color table length was incorrectly calculated.
+
 ## [0.3.2] - 2022-04-16
 
 ### Added 
