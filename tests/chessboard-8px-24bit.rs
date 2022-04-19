@@ -20,48 +20,12 @@ fn chessboard_8px_24bit() {
         }
     );
 
-    assert_eq!(bmp.image_data().len(), 314 - 122);
-}
-
-#[test]
-fn chessboard_8px_24bit_truncated_iter() {
-    // corrupt data by removing the last 10 bytes
-    let truncated_data = &DATA[..DATA.len() - 10];
-
-    let bmp = RawBmp::from_slice(truncated_data).expect("Failed to parse");
-
-    assert_eq!(
-        bmp.header(),
-        &Header {
-            file_size: 314,
-            image_data_start: 122,
-            bpp: Bpp::Bits24,
-            image_size: Size::new(8, 8),
-            image_data_len: 192,
-            channel_masks: None,
-            row_order: RowOrder::BottomUp,
-        }
+    assert!(
+        bmp.color_table().is_none(),
+        "there should be no color table for this image"
     );
 
-    let pixels: Vec<u32> = bmp.pixels().map(|pixel| pixel.color).collect();
-
-    assert_eq!(pixels.len(), 8 * 8);
-
-    // 24BPP black/white chessboard.
-    // Because BMP files are stored bottom line first the truncated data shows up as
-    // zeroes in the top image row.
-    let expected = vec![
-        0xffffff, 0xffffff, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, //
-        0xffffff, 0xffffff, 0x000000, 0x000000, 0xffffff, 0xffffff, 0x000000, 0x000000, //
-        0x000000, 0x000000, 0xffffff, 0xffffff, 0x000000, 0x000000, 0xffffff, 0xffffff, //
-        0x000000, 0x000000, 0xffffff, 0xffffff, 0x000000, 0x000000, 0xffffff, 0xffffff, //
-        0xffffff, 0xffffff, 0x000000, 0x000000, 0xffffff, 0xffffff, 0x000000, 0x000000, //
-        0xffffff, 0xffffff, 0x000000, 0x000000, 0xffffff, 0xffffff, 0x000000, 0x000000, //
-        0x000000, 0x000000, 0xffffff, 0xffffff, 0x000000, 0x000000, 0xffffff, 0xffffff, //
-        0x000000, 0x000000, 0xffffff, 0xffffff, 0x000000, 0x000000, 0xffffff, 0xffffff, //
-    ];
-
-    assert_eq!(pixels, expected);
+    assert_eq!(bmp.image_data().len(), 314 - 122);
 }
 
 #[test]

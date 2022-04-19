@@ -6,6 +6,22 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+- [#27](https://github.com/embedded-graphics/tinybmp/pull/27) Added a `ColorTable` struct and the `RawBmp::color_table` getter to access the BMP files color table.
+- [#27](https://github.com/embedded-graphics/tinybmp/pull/27) Added support for 4bpp images with color table.
+- [#27](https://github.com/embedded-graphics/tinybmp/pull/27) Added `display` example to display BMP images using the embedded-graphics simulator.
+
+### Changed
+
+- **(breaking)** [#27](https://github.com/embedded-graphics/tinybmp/pull/27) Use 1.57 as the MSRV.
+- **(breaking)** [#27](https://github.com/embedded-graphics/tinybmp/pull/27) Merged `DynamicBmp` and `Bmp`. `Bmp` will now automatically convert colors and doesn't require explicit color type annotations anymore.
+- **(breaking)** [#27](https://github.com/embedded-graphics/tinybmp/pull/27) Changed bounds for the `Bmp` color type from `C: PixelColor + From<<C as PixelColor>::Raw>` to `C: PixelColor + From<Rgb555> + From<Rgb565> + From<Rgb888>`.
+- **(breaking)** [#27](https://github.com/embedded-graphics/tinybmp/pull/27) Added additional `ParseError` variants for improved reporting of errors.
+- **(breaking)** [#27](https://github.com/embedded-graphics/tinybmp/pull/27) Removed `RawBmp::size` and `RawBmp::color_bpp`. Use `RawBmp::header().image_size` and `RawBmp::header().bpp` instead.
+- [#27](https://github.com/embedded-graphics/tinybmp/pull/27) `Bpp::bits`, `RawBmp::image_data`, `RawBmp::header`, and `RawPixel::new` are now `const`.
+- [#27](https://github.com/embedded-graphics/tinybmp/pull/27) BMP files with incomplete image data are now detected by `Bmp::from_slice`.
+
 ## [0.3.3] - 2022-04-18
 
 ### Fixed
@@ -14,7 +30,7 @@
 
 ## [0.3.2] - 2022-04-16
 
-### Added 
+### Added
 
 - [#19](https://github.com/embedded-graphics/tinybmp/pull/19) Added support for color mapped 1bpp and 8bpp images. This change now also requires 1bpp and 8bpp images to contain a color table.
 

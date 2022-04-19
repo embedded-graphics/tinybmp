@@ -1,6 +1,6 @@
 //! This example displays BMP images using the embedded-graphics simulator.
 //!
-//! Basic usage: `cargo run --example display -- COLOR_TYPE BMP_IMAGE`
+//! Basic usage: `cargo run --example display -- BMP_FILE`
 //!
 //! More usage and arguments can be listed by running `cargo run --example display -- --help`
 
@@ -10,11 +10,14 @@ use embedded_graphics::{
     pixelcolor::{BinaryColor, Gray8, Rgb555, Rgb565, Rgb888},
     prelude::*,
 };
-use embedded_graphics_simulator::{OutputSettingsBuilder, SimulatorDisplay, Window};
+use embedded_graphics_simulator::{
+    OutputSettings, OutputSettingsBuilder, SimulatorDisplay, Window,
+};
 use std::{fs, num::NonZeroU32, path::PathBuf};
-use tinybmp::{Bmp, DynamicBmp};
+use tinybmp::Bmp;
 
 #[derive(Debug, Clone, Copy, ArgEnum)]
+#[clap(rename_all = "PascalCase")]
 enum ColorType {
     Rgb555,
     Rgb565,
@@ -25,18 +28,21 @@ enum ColorType {
 
 #[derive(Parser)]
 struct Args {
+    /// Pixel scale
     #[clap(long, default_value = "1")]
     scale: NonZeroU32,
-    #[clap(long)]
-    dynamic: bool,
-    #[clap(arg_enum)]
+
+    /// Display color type
+    #[clap(arg_enum, long, default_value = "Rgb888")]
     color_type: ColorType,
+
+    /// BMP file
     bmp_file: PathBuf,
 }
 
-fn draw_bmp<C>(data: &[u8]) -> SimulatorDisplay<Rgb888>
+fn display_bmp<C>(data: &[u8], settings: &OutputSettings)
 where
-    C: PixelColor + From<C::Raw> + Into<Rgb888>,
+    C: PixelColor + From<Rgb555> + From<Rgb565> + From<Rgb888> + Into<Rgb888>,
 {
     let bmp = Bmp::<C>::from_slice(&data).unwrap();
 
@@ -46,57 +52,24 @@ where
         .draw(&mut display.color_converted())
         .unwrap();
 
-    display
-}
-
-fn draw_dynamic_bmp<C>(data: &[u8]) -> SimulatorDisplay<Rgb888>
-where
-    C: PixelColor
-        + From<C::Raw>
-        + Into<Rgb888>
-        + From<Rgb565>
-        + From<Rgb555>
-        + From<Rgb888>
-        + From<Gray8>,
-{
-    let bmp = DynamicBmp::<C>::from_slice(&data).unwrap();
-
-    let mut display = SimulatorDisplay::<Rgb888>::new(bmp.size());
-
-    Image::new(&bmp, Point::zero())
-        .draw(&mut display.color_converted())
-        .unwrap();
-
-    display
+    let mut window = Window::new("BMP viewer", &settings);
+    window.show_static(&display);
 }
 
 fn main() {
     let args = Args::parse();
 
-    let data = fs::read(&args.bmp_file).unwrap();
-
-    let display = if args.dynamic {
-        match args.color_type {
-            ColorType::Rgb555 => draw_dynamic_bmp::<Rgb555>(&data),
-            ColorType::Rgb565 => draw_dynamic_bmp::<Rgb565>(&data),
-            ColorType::Rgb888 => draw_dynamic_bmp::<Rgb888>(&data),
-            ColorType::Gray8 => draw_dynamic_bmp::<Gray8>(&data),
-            ColorType::BinaryColor => draw_dynamic_bmp::<BinaryColor>(&data),
-        }
-    } else {
-        match args.color_type {
-            ColorType::Rgb555 => draw_bmp::<Rgb555>(&data),
-            ColorType::Rgb565 => draw_bmp::<Rgb565>(&data),
-            ColorType::Rgb888 => draw_bmp::<Rgb888>(&data),
-            ColorType::Gray8 => draw_bmp::<Gray8>(&data),
-            ColorType::BinaryColor => draw_bmp::<BinaryColor>(&data),
-        }
-    };
-
     let settings = OutputSettingsBuilder::new()
         .scale(args.scale.into())
         .build();
 
-    let mut window = Window::new("BMP viewer", &settings);
-    window.show_static(&display);
+    let data = fs::read(&args.bmp_file).unwrap();
+
+    match args.color_type {
+        ColorType::Rgb555 => display_bmp::<Rgb555>(&data, &settings),
+        ColorType::Rgb565 => display_bmp::<Rgb565>(&data, &settings),
+        ColorType::Rgb888 => display_bmp::<Rgb888>(&data, &settings),
+        ColorType::Gray8 => display_bmp::<Gray8>(&data, &settings),
+        ColorType::BinaryColor => display_bmp::<BinaryColor>(&data, &settings),
+    }
 }

@@ -21,6 +21,8 @@ use dib_header::DibHeader;
 pub enum Bpp {
     /// 1 bit per pixel.
     Bits1,
+    /// 4 bit per pixel.
+    Bits4,
     /// 8 bits per pixel.
     Bits8,
     /// 16 bits per pixel.
@@ -31,7 +33,37 @@ pub enum Bpp {
     Bits32,
 }
 
-/// Image row order
+impl Bpp {
+    const fn new(value: u16) -> Result<Self, ParseError> {
+        Ok(match value {
+            1 => Self::Bits1,
+            4 => Self::Bits4,
+            8 => Self::Bits8,
+            16 => Self::Bits16,
+            24 => Self::Bits24,
+            32 => Self::Bits32,
+            _ => return Err(ParseError::UnsupportedBpp(value)),
+        })
+    }
+
+    fn parse(input: &[u8]) -> Result<(&[u8], Self), ParseError> {
+        le_u16(input).and_then(|(input, value)| Ok((input, Self::new(value)?)))
+    }
+
+    /// Returns the number of bits.
+    pub const fn bits(self) -> u16 {
+        match self {
+            Self::Bits1 => 1,
+            Self::Bits4 => 4,
+            Self::Bits8 => 8,
+            Self::Bits16 => 16,
+            Self::Bits24 => 24,
+            Self::Bits32 => 32,
+        }
+    }
+}
+
+/// Image row order.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 #[non_exhaustive]
 pub enum RowOrder {
@@ -47,35 +79,9 @@ impl Default for RowOrder {
     }
 }
 
-impl Bpp {
-    fn new(value: u16) -> Result<Self, ParseError> {
-        Ok(match value {
-            1 => Self::Bits1,
-            8 => Self::Bits8,
-            16 => Self::Bits16,
-            24 => Self::Bits24,
-            32 => Self::Bits32,
-            _ => return Err(ParseError::UnsupportedBpp(value)),
-        })
-    }
-
-    fn parse(input: &[u8]) -> Result<(&[u8], Self), ParseError> {
-        le_u16(input).and_then(|(input, value)| Ok((input, Self::new(value)?)))
-    }
-
-    /// Returns the number of bits.
-    pub fn bits(self) -> u16 {
-        match self {
-            Self::Bits1 => 1,
-            Self::Bits8 => 8,
-            Self::Bits16 => 16,
-            Self::Bits24 => 24,
-            Self::Bits32 => 32,
-        }
-    }
-}
-
-/// BMP header information
+/// BMP header information.
+///
+/// The header can be accessed by using [`RawBmp::header`](crate::RawBmp::header).
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Header {
     /// Total file size in bytes.
@@ -107,7 +113,7 @@ impl Header {
         // File header
         let (input, magic) = take::<2>(input)?;
         if &magic != b"BM" {
-            return Err(ParseError::InvalidFileSignature);
+            return Err(ParseError::InvalidFileSignature(magic));
         }
 
         let (input, file_size) = le_u32(input)?;
@@ -117,14 +123,6 @@ impl Header {
 
         // DIB header
         let (input, dib_header) = DibHeader::parse(input)?;
-
-        match dib_header.bpp {
-            // Images with BPP <= 8 MUST include a color table
-            Bpp::Bits1 | Bpp::Bits8 if dib_header.color_table_num_entries == 0 => {
-                return Err(ParseError::MissingColorTable);
-            }
-            _ => (),
-        }
 
         let (input, color_table) = if dib_header.color_table_num_entries > 0 {
             // Each color table entry is 4 bytes long
@@ -151,9 +149,18 @@ impl Header {
             ),
         ))
     }
+
+    /// Returns the row length in bytes.
+    ///
+    /// Each row in a BMP file is a multiple of 4 bytes long.
+    pub(crate) fn bytes_per_row(&self) -> usize {
+        let bits_per_row = self.image_size.width as usize * usize::from(self.bpp.bits());
+
+        (bits_per_row + 31) / 32 * (32 / 8)
+    }
 }
 
-/// Masks for the color channels.
+/// Bit masks for the color channels.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub struct ChannelMasks {
     /// Red channel mask.
@@ -199,7 +206,7 @@ pub enum CompressionMethod {
 }
 
 impl CompressionMethod {
-    fn new(value: u32) -> Result<Self, ParseError> {
+    const fn new(value: u32) -> Result<Self, ParseError> {
         Ok(match value {
             0 => Self::Rgb,
             3 => Self::Bitfields,

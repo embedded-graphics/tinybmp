@@ -53,9 +53,17 @@ generate-docs:
     cargo clean --doc
     cargo doc --all-features
 
-# Runs cargo-deadlinks on the docs
-check-links: generate-docs
-    cargo deadlinks
+# Checks for broken links in cargo docs and readme
+check-links: check-doc-links check-readme-links
+
+# Checks for broken links in cargo docs
+check-doc-links: generate-docs
+    cargo deadlinks --ignore-fragments
+
+# Checks for broken links in readme
+check-readme-links: check-readme
+    cd tools/check-md-refs && cargo run -- '../../README.md'
+    lychee --exclude=circleci.com --verbose --exclude='LICENSE*' -- './**/README.md'
 
 #----------------------
 # README.md generation
@@ -67,6 +75,8 @@ generate-readme: (_build-readme)
 
 # Check README.md for a single crate
 @check-readme: (_build-readme)
+    #!/usr/bin/env bash
+    set -euo pipefail
     diff -q {{target_dir}}/README.md README.md || ( \
         echo -e "\033[1;31mError:\033[0m README.md needs to be regenerated."; \
         echo -e "       Run 'just generate-readme' to regenerate.\n"; \

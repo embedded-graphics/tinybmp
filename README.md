@@ -7,62 +7,64 @@
 
 ## [Documentation](https://docs.rs/tinybmp)
 
-A small BMP parser designed for embedded, no-std environments but usable anywhere. Beyond
-parsing the image header, no other allocations are made.
+A small BMP parser primarily for embedded, no-std environments but usable anywhere.
 
-To use `tinybmp` without `embedded-graphics` the raw data for individual pixels in an image
-can be accessed using the methods provided by the `RawBmp` struct.
+This crate is primarily targeted at drawing BMP images to [`embedded_graphics`]
+[`DrawTarget`]s, but can also be used to parse BMP
+files for other applications.
 
 ## Examples
 
-### Using `Bmp` to draw a BMP image
+### Draw a BMP image to an embedded-graphics draw target
 
-If the color format inside the BMP file is known at compile time the `Bmp` type can be used
-to draw an image to an `embedded-graphics` draw target. The BMP file used in this example
-uses 16 bits per pixel with a RGB565 format.
+The [`Bmp`] struct is used together with [`embedded_graphics`]'s [`Image`] struct to display
+BMP files on any draw target.
 
 ```rust
 use embedded_graphics::{image::Image, prelude::*};
 use tinybmp::Bmp;
 
+// Include the BMP file data.
 let bmp_data = include_bytes!("../tests/chessboard-8px-color-16bit.bmp");
 
-// Load 16 BPP 8x8px image.
-// Note: The color type is specified explicitly to match the format used by the BMP image.
-let bmp = Bmp::<Rgb565>::from_slice(bmp_data).unwrap();
+// Parse the BMP file.
+let bmp = Bmp::from_slice(bmp_data).unwrap();
 
 // Draw the image with the top left corner at (10, 20) by wrapping it in
 // an embedded-graphics `Image`.
 Image::new(&bmp, Point::new(10, 20)).draw(&mut display)?;
 ```
 
-### Using `DynamicBmp` to draw a BMP image
+### Using the pixel iterator
 
-If the exact color format used in the BMP file isn't known at compile time, for example to read
-user supplied images, the `DynamicBmp` can be used. Because automatic color conversion will
-be used the drawing performance might be degraded in comparison to `Bmp`.
+To access the image data for other applications the [`Bmp::pixels`] method returns an iterator
+over all pixels in the BMP file. The colors inside the BMP file will automatically converted
+to one of  [`embedded_graphics`]'s [color types].
 
 ```rust
-use embedded_graphics::{image::Image, prelude::*};
-use tinybmp::DynamicBmp;
+use embedded_graphics::{pixelcolor::Rgb888, prelude::*};
+use tinybmp::Bmp;
 
-let bmp_data = include_bytes!("../tests/chessboard-8px-color-16bit.bmp");
+// Include the BMP file data.
+let bmp_data = include_bytes!("../tests/chessboard-8px-24bit.bmp");
 
-// Load BMP image with unknown color format.
-// Note: There is no need to explicitly specify the color type.
-let bmp = DynamicBmp::from_slice(bmp_data).unwrap();
+// Parse the BMP file.
+// Note that it is necessary to explicitly specify the color type which the colors in the BMP
+// file will be converted into.
+let bmp = Bmp::<Rgb888>::from_slice(bmp_data).unwrap();
 
-// Draw the image with the top left corner at (10, 20) by wrapping it in
-// an embedded-graphics `Image`.
-Image::new(&bmp, Point::new(10, 20)).draw(&mut display)?;
+for Pixel(position, color) in bmp.pixels() {
+    println!("R: {}, G: {}, B: {} @ ({})", color.r(), color.g(), color.b(), position);
+}
 ```
 
 ### Accessing the raw image data
 
-The `RawBmp` struct provides methods to access lower level information about a BMP file,
-like the BMP header or the raw image data. An instance of this type can be created by using
-`from_slice` or by accessing the underlying raw object of a `Bmp` or `DynamicBmp` object
-by using `as_raw`.
+For most applications the higher level access provided by [`Bmp`] is sufficient. But in case
+lower level access is necessary the [`RawBmp`] struct can be used to access BMP [header
+information] and the [color table]. A [`RawBmp`] object can be created directly from image data
+by using [`from_slice`] or by accessing the  underlying raw object of a [`Bmp`] object with
+[`Bmp::as_raw`].
 
 ```rust
 use embedded_graphics::prelude::*;
@@ -85,9 +87,6 @@ assert_eq!(
     }
 );
 
-// Check that raw image data slice is the correct length (according to parsed header)
-assert_eq!(bmp.image_data().len(), bmp.header().image_data_len as usize);
-
 // Get an iterator over the pixel coordinates and values in this image and load into a vec
 let pixels: Vec<RawPixel> = bmp.pixels().collect();
 
@@ -95,7 +94,20 @@ let pixels: Vec<RawPixel> = bmp.pixels().collect();
 assert_eq!(pixels.len(), 8 * 8);
 ```
 
-[`embedded-graphics`]: https://crates.io/crates/embedded-graphics
+[`Bmp`]: https://docs.rs/tinybmp/latest/tinybmp/struct.Bmp.html
+[`Bmp::pixels`]: https://docs.rs/tinybmp/latest/tinybmp/struct.Bmp.html#method.pixels
+[`Bmp::as_raw`]: https://docs.rs/tinybmp/latest/tinybmp/struct.Bmp.html#method.as_raw
+[`RawBmp`]: https://docs.rs/tinybmp/latest/tinybmp/struct.RawBmp.html
+[header information]: https://docs.rs/tinybmp/latest/tinybmp/struct.RawBmp.html#method.header
+[color table]: https://docs.rs/tinybmp/latest/tinybmp/struct.RawBmp.html#method.color_table
+[`from_slice`]: https://docs.rs/tinybmp/latest/tinybmp/struct.RawBmp.html#method.from_slice
+
+[`embedded_graphics`]: https://docs.rs/embedded_graphics
+[color types]: https://docs.rs/embedded-graphics/latest/embedded_graphics/pixelcolor/index.html#structs
+[`DrawTarget`]: https://docs.rs/embedded-graphics/latest/embedded_graphics/draw_target/trait.DrawTarget.html
+[`Image`]: https://docs.rs/embedded-graphics/latest/embedded_graphics/image/struct.Image.html
+
+[color types]: embedded_graphics::pixelcolor#structs
 
 ## License
 

@@ -5,7 +5,7 @@ use embedded_graphics::{
     prelude::*,
     primitives::Rectangle,
 };
-use tinybmp::{Bmp, DynamicBmp, RowOrder};
+use tinybmp::{Bmp, RowOrder};
 
 #[test]
 fn negative_top_left() {
@@ -45,11 +45,7 @@ fn expected_image_gray() -> MockDisplay<Gray8> {
     MockDisplay::from_pattern(&["08F"])
 }
 
-fn draw_image<C, T>(image_drawable: T) -> MockDisplay<C>
-where
-    C: PixelColor,
-    T: ImageDrawable<Color = C>,
-{
+fn draw_image<I: ImageDrawable>(image_drawable: I) -> MockDisplay<I::Color> {
     let image = Image::new(&image_drawable, Point::zero());
 
     let mut display = MockDisplay::new();
@@ -60,17 +56,15 @@ where
 
 fn test_color_pattern<C>(data: &[u8])
 where
-    C: PixelColor + From<<C as PixelColor>::Raw> + ColorMapping,
+    C: PixelColor + From<Rgb555> + From<Rgb565> + From<Rgb888> + ColorMapping,
 {
     let bmp = Bmp::<C>::from_slice(data).unwrap();
     draw_image(bmp).assert_eq(&expected_image_color());
-}
 
-fn test_color_pattern_dynamic(data: &[u8]) {
-    let bmp = DynamicBmp::from_slice(data).unwrap();
+    let bmp = Bmp::<Rgb565>::from_slice(data).unwrap();
     draw_image(bmp).assert_eq(&expected_image_color::<Rgb565>());
 
-    let bmp = DynamicBmp::from_slice(data).unwrap();
+    let bmp = Bmp::<Rgb888>::from_slice(data).unwrap();
     draw_image(bmp).assert_eq(&expected_image_color::<Rgb888>());
 }
 
@@ -80,18 +74,8 @@ fn colors_rgb555() {
 }
 
 #[test]
-fn colors_rgb555_dynamic() {
-    test_color_pattern_dynamic(include_bytes!("./colors_rgb555.bmp"));
-}
-
-#[test]
 fn colors_rgb565() {
     test_color_pattern::<Rgb565>(include_bytes!("./colors_rgb565.bmp"));
-}
-
-#[test]
-fn colors_rgb565_dynamic() {
-    test_color_pattern_dynamic(include_bytes!("./colors_rgb565.bmp"));
 }
 
 #[test]
@@ -100,34 +84,21 @@ fn colors_rgb888_24bit() {
 }
 
 #[test]
-fn colors_rgb888_24bit_dynamic() {
-    test_color_pattern_dynamic(include_bytes!("./colors_rgb888_24bit.bmp"));
-}
-
-#[test]
 fn colors_rgb888_32bit() {
     test_color_pattern::<Rgb888>(include_bytes!("./colors_rgb888_32bit.bmp"));
-}
-
-#[test]
-fn colors_rgb888_32bit_dynamic() {
-    test_color_pattern_dynamic(include_bytes!("./colors_rgb888_32bit.bmp"));
 }
 
 #[test]
 fn colors_grey8() {
     let bmp: Bmp<Gray8> = Bmp::from_slice(include_bytes!("./colors_grey8.bmp")).unwrap();
     draw_image(bmp).assert_eq(&expected_image_gray());
-}
 
-#[test]
-fn colors_grey8_dynamic() {
-    let bmp = DynamicBmp::from_slice(include_bytes!("./colors_grey8.bmp")).unwrap();
-    let display = draw_image::<Rgb565, _>(bmp);
+    let bmp = Bmp::<Rgb565>::from_slice(include_bytes!("./colors_grey8.bmp")).unwrap();
+    let display = draw_image(bmp);
     display.assert_eq(&expected_image_gray().map(|c| c.into()));
 
-    let bmp = DynamicBmp::from_slice(include_bytes!("./colors_grey8.bmp")).unwrap();
-    let display = draw_image::<Rgb888, _>(bmp);
+    let bmp = Bmp::<Rgb888>::from_slice(include_bytes!("./colors_grey8.bmp")).unwrap();
+    let display = draw_image(bmp);
     display.assert_eq(&expected_image_gray().map(|c| c.into()));
 }
 
