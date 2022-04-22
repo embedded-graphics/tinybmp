@@ -94,6 +94,11 @@ let pixels: Vec<RawPixel> = bmp.pixels().collect();
 assert_eq!(pixels.len(), 8 * 8);
 ```
 
+### Minimum supported Rust version
+
+The minimum supported Rust version for embedded-graphics is `1.57` or greater.
+Ensure you have the correct version of Rust installed, preferably through <https://rustup.rs>.
+
 [`Bmp`]: https://docs.rs/tinybmp/latest/tinybmp/struct.Bmp.html
 [`Bmp::pixels`]: https://docs.rs/tinybmp/latest/tinybmp/struct.Bmp.html#method.pixels
 [`Bmp::as_raw`]: https://docs.rs/tinybmp/latest/tinybmp/struct.Bmp.html#method.as_raw
