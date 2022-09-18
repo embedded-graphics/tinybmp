@@ -19,6 +19,11 @@ fn chessboard_8px_color_16bit() {
         }
     );
 
+    assert!(
+        bmp.color_table().is_none(),
+        "there should be no color table for this image"
+    );
+
     assert_eq!(bmp.image_data().len(), 266 - 138);
 }
 

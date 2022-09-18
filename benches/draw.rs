@@ -4,7 +4,7 @@ use embedded_graphics::{
     pixelcolor::{Rgb555, Rgb565, Rgb888},
     prelude::*,
 };
-use tinybmp::{Bmp, DynamicBmp};
+use tinybmp::Bmp;
 
 // TODO: use e-g framebuffer when it's added
 struct Framebuffer<C> {
@@ -89,15 +89,14 @@ fn parser_benchmarks(c: &mut Criterion) {
         })
     });
 
-    // TODO: uncomment when 4BPP support is added
-    //
-    // c.bench_function("draw indexed 4BPP", |b| {
-    //     let mut fb = Framebuffer::<Rgb888>::new();
-    //     b.iter(|| {
-    //         let bmp = Bmp::<Rgb888>::from_slice(include_bytes!("../tests/logo-indexed-4bpp.bmp")).unwrap();
-    //         Image::new(&bmp, Point::zero()).draw(&mut fb).unwrap();
-    //     })
-    // });
+    c.bench_function("draw indexed 4BPP", |b| {
+        let mut fb = Framebuffer::<Rgb888>::new();
+        b.iter(|| {
+            let bmp = Bmp::<Rgb888>::from_slice(include_bytes!("../tests/logo-indexed-4bpp.bmp"))
+                .unwrap();
+            Image::new(&bmp, Point::zero()).draw(&mut fb).unwrap();
+        })
+    });
 
     c.bench_function("draw indexed 8BPP", |b| {
         let mut fb = Framebuffer::<Rgb888>::new();
@@ -111,7 +110,7 @@ fn parser_benchmarks(c: &mut Criterion) {
     c.bench_function("draw dynamic RGB565 to RGB888", |b| {
         let mut fb = Framebuffer::<Rgb888>::new();
         b.iter(|| {
-            let bmp = DynamicBmp::from_slice(include_bytes!("../tests/logo-rgb565.bmp")).unwrap();
+            let bmp = Bmp::from_slice(include_bytes!("../tests/logo-rgb565.bmp")).unwrap();
             Image::new(&bmp, Point::zero()).draw(&mut fb).unwrap();
         })
     });
@@ -119,8 +118,7 @@ fn parser_benchmarks(c: &mut Criterion) {
     c.bench_function("draw dynamic RGB888 to RGB888", |b| {
         let mut fb = Framebuffer::<Rgb888>::new();
         b.iter(|| {
-            let bmp =
-                DynamicBmp::from_slice(include_bytes!("../tests/logo-rgb888-24bpp.bmp")).unwrap();
+            let bmp = Bmp::from_slice(include_bytes!("../tests/logo-rgb888-24bpp.bmp")).unwrap();
             Image::new(&bmp, Point::zero()).draw(&mut fb).unwrap();
         })
     });
@@ -128,7 +126,7 @@ fn parser_benchmarks(c: &mut Criterion) {
     c.bench_function("draw dynamic RGB565 to RGB565", |b| {
         let mut fb = Framebuffer::<Rgb565>::new();
         b.iter(|| {
-            let bmp = DynamicBmp::from_slice(include_bytes!("../tests/logo-rgb565.bmp")).unwrap();
+            let bmp = Bmp::from_slice(include_bytes!("../tests/logo-rgb565.bmp")).unwrap();
             Image::new(&bmp, Point::zero()).draw(&mut fb).unwrap();
         })
     });
@@ -136,8 +134,7 @@ fn parser_benchmarks(c: &mut Criterion) {
     c.bench_function("draw dynamic RGB888 to RGB565", |b| {
         let mut fb = Framebuffer::<Rgb565>::new();
         b.iter(|| {
-            let bmp =
-                DynamicBmp::from_slice(include_bytes!("../tests/logo-rgb888-24bpp.bmp")).unwrap();
+            let bmp = Bmp::from_slice(include_bytes!("../tests/logo-rgb888-24bpp.bmp")).unwrap();
             Image::new(&bmp, Point::zero()).draw(&mut fb).unwrap();
         })
     });

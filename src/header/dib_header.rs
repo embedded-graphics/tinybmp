@@ -23,7 +23,6 @@ pub struct DibHeader {
     pub channel_masks: Option<ChannelMasks>,
     pub header_type: HeaderType,
     pub row_order: RowOrder,
-    /// Entry length of color table (NOT length in bytes)
     pub color_table_num_entries: u32,
 }
 
@@ -86,12 +85,8 @@ impl DibHeader {
             (dib_header_data, None)
         };
 
-        let color_table_num_entries: u32 = if colors_used == 0 {
-            if bpp.bits() < 16 {
-                2u32.pow(bpp.bits().into())
-            } else {
-                0
-            }
+        let color_table_num_entries = if colors_used == 0 && bpp.bits() < 16 {
+            1 << bpp.bits()
         } else {
             colors_used
         };
@@ -118,7 +113,8 @@ impl DibHeader {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+// Note: Do not change the order of the enum variants!
+#[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord, Hash)]
 pub enum HeaderType {
     Info,
     V3,
@@ -128,6 +124,6 @@ pub enum HeaderType {
 
 impl HeaderType {
     fn is_at_least(self, header_type: HeaderType) -> bool {
-        self as u8 >= header_type as u8
+        self >= header_type
     }
 }

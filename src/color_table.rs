@@ -1,8 +1,21 @@
 use core::convert::TryInto;
 
-use embedded_graphics::prelude::*;
+use embedded_graphics::{
+    pixelcolor::{raw::RawU24, Rgb888},
+    prelude::*,
+};
 
 /// Color table.
+///
+/// This struct provides access to the color table in a BMP file. Use
+/// [`RawBmp::color_table`](crate::RawBmp::color_table) to get a reference to the color table of an
+/// image.
+///
+/// Accessing the color table directly isn't necessary if images are drawn to an
+/// [`embedded_graphics`] [`DrawTarget`](embedded_graphics::draw_target::DrawTarget). The conversion
+/// of color indices to actual colors will be handled by [`Bmp`].
+///
+/// [`Bmp`]: crate::Bmp
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ColorTable<'a> {
     data: &'a [u8],
@@ -14,16 +27,14 @@ impl<'a> ColorTable<'a> {
     }
 
     /// Returns the number of entries.
-    // Only used in tests, hence the allow
-    #[allow(unused)]
-    fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         return self.data.len() / 4;
     }
 
-    /// Returns the raw value of a color table entry.
+    /// Returns a color table entry.
     ///
     /// `None` is returned if `index` is out of bounds.
-    pub fn get_raw<R: RawData>(&self, index: u32) -> Option<R> {
+    pub fn get(&self, index: u32) -> Option<Rgb888> {
         // MSRV: Experiment with slice::as_chunks when it's stabilized
 
         let offset = index as usize * 4;
@@ -31,83 +42,6 @@ impl<'a> ColorTable<'a> {
 
         let raw = u32::from_le_bytes(bytes.try_into().unwrap());
 
-        Some(R::from_u32(raw))
-    }
-
-    /// Returns a color table entry.
-    ///
-    /// `None` is returned if `index` is out of bounds.
-    pub fn get<C: PixelColor + From<<C as PixelColor>::Raw>>(&self, index: u32) -> Option<C> {
-        self.get_raw::<C::Raw>(index).map(Into::into)
-    }
-}
-
-// TODO: When the color table is made public, the tests below should be moved into the corresponding
-// files under `tests/`.
-#[cfg(test)]
-mod tests {
-    use crate::{Bmp, RawBmp};
-    use embedded_graphics::pixelcolor::{raw::RawU32, BinaryColor, Rgb888};
-
-    #[test]
-    fn chessboard_8px_1bit() {
-        let bmp = RawBmp::from_slice(include_bytes!("../tests/chessboard-8px-1bit.bmp"))
-            .expect("Failed to parse");
-
-        let color_table = bmp.color_table().unwrap();
-        assert_eq!(color_table.len(), 2);
-        assert_eq!(color_table.get_raw(0), Some(RawU32::new(0x00000000)));
-        assert_eq!(color_table.get_raw(1), Some(RawU32::new(0xFFFFFFFF)));
-        assert_eq!(color_table.get_raw(2), Option::<RawU32>::None);
-
-        assert_eq!(bmp.image_data().len(), 94 - 62);
-    }
-
-    #[test]
-    fn chessboard_8px_16bit() {
-        let bmp = RawBmp::from_slice(include_bytes!("../tests/chessboard-8px-color-16bit.bmp"))
-            .expect("Failed to parse");
-
-        assert!(
-            bmp.color_table().is_none(),
-            "there should be no color table for this image"
-        );
-    }
-
-    #[test]
-    fn chessboard_8px_24bit() {
-        let bmp = RawBmp::from_slice(include_bytes!("../tests/chessboard-8px-24bit.bmp"))
-            .expect("Failed to parse");
-
-        assert!(
-            bmp.color_table().is_none(),
-            "there should be no color table for this image"
-        );
-    }
-
-    #[test]
-    fn colors_8bpp_indexed() {
-        let bmp = Bmp::<'_, Rgb888>::from_slice(include_bytes!("../tests/colors_8bpp_indexed.bmp"))
-            .expect("Failed to parse");
-
-        assert!(
-            bmp.as_raw().color_table().is_some(),
-            "there should be a color table for this image"
-        );
-    }
-
-    #[test]
-    // A regression was found from the original fix, described in <https://github.com/embedded-graphics/tinybmp/issues/18#issuecomment-1101600500>
-    fn issue_18() {
-        let bmp = Bmp::<'_, BinaryColor>::from_slice(include_bytes!(
-            "../tests/chessboard-8px-1bit-0colors.bmp"
-        ))
-        .expect("Failed to parse");
-
-        assert_eq!(bmp.as_raw().color_table().unwrap().len(), 2);
-        assert_eq!(
-            bmp.as_raw().color_table().unwrap().data,
-            &[0, 0, 0, 0, 255, 255, 255, 0]
-        );
+        Some(RawU24::from_u32(raw).into())
     }
 }

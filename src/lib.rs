@@ -1,18 +1,17 @@
-//! A small BMP parser designed for embedded, no-std environments but usable anywhere. Beyond
-//! parsing the image header, no other allocations are made.
+//! A small BMP parser primarily for embedded, no-std environments but usable anywhere.
 //!
-//! To use `tinybmp` without [`embedded-graphics`] the raw data for individual pixels in an image
-//! can be accessed using the methods provided by the [`RawBmp`] struct.
+//! This crate is primarily targeted at drawing BMP images to [`embedded_graphics`]
+//! [`DrawTarget`]s, but can also be used to parse BMP
+//! files for other applications.
 //!
 //! # Examples
 //!
-//! ## Using `Bmp` to draw a BMP image
+//! ## Draw a BMP image to an embedded-graphics draw target
 //!
-//! If the color format inside the BMP file is known at compile time the [`Bmp`] type can be used
-//! to draw an image to an [`embedded-graphics`] draw target. The BMP file used in this example
-//! uses 16 bits per pixel with a RGB565 format.
+//! The [`Bmp`] struct is used together with [`embedded_graphics`]'s [`Image`] struct to display
+//! BMP files on any draw target.
 //!
-//! ```rust
+//! ```
 //! # fn main() -> Result<(), core::convert::Infallible> {
 //! use embedded_graphics::{image::Image, prelude::*};
 //! use tinybmp::Bmp;
@@ -20,11 +19,11 @@
 //! # use embedded_graphics::pixelcolor::Rgb565;
 //! # let mut display: MockDisplay<Rgb565> = MockDisplay::default();
 //!
+//! // Include the BMP file data.
 //! let bmp_data = include_bytes!("../tests/chessboard-8px-color-16bit.bmp");
 //!
-//! // Load 16 BPP 8x8px image.
-//! // Note: The color type is specified explicitly to match the format used by the BMP image.
-//! let bmp = Bmp::<Rgb565>::from_slice(bmp_data).unwrap();
+//! // Parse the BMP file.
+//! let bmp = Bmp::from_slice(bmp_data).unwrap();
 //!
 //! // Draw the image with the top left corner at (10, 20) by wrapping it in
 //! // an embedded-graphics `Image`.
@@ -32,40 +31,40 @@
 //! # Ok::<(), core::convert::Infallible>(()) }
 //! ```
 //!
-//! ## Using `DynamicBmp` to draw a BMP image
+//! ## Using the pixel iterator
 //!
-//! If the exact color format used in the BMP file isn't known at compile time, for example to read
-//! user supplied images, the [`DynamicBmp`] can be used. Because automatic color conversion will
-//! be used the drawing performance might be degraded in comparison to [`Bmp`].
+//! To access the image data for other applications the [`Bmp::pixels`] method returns an iterator
+//! over all pixels in the BMP file. The colors inside the BMP file will automatically converted
+//! to one of  [`embedded_graphics`]'s [color types].
 //!
-//! ```rust
+//! ```
 //! # fn main() -> Result<(), core::convert::Infallible> {
-//! use embedded_graphics::{image::Image, prelude::*};
-//! use tinybmp::DynamicBmp;
-//! # use embedded_graphics::mock_display::MockDisplay;
-//! # use embedded_graphics::pixelcolor::Rgb565;
-//! # let mut display: MockDisplay<Rgb565> = MockDisplay::default();
+//! use embedded_graphics::{pixelcolor::Rgb888, prelude::*};
+//! use tinybmp::Bmp;
 //!
-//! let bmp_data = include_bytes!("../tests/chessboard-8px-color-16bit.bmp");
+//! // Include the BMP file data.
+//! let bmp_data = include_bytes!("../tests/chessboard-8px-24bit.bmp");
 //!
-//! // Load BMP image with unknown color format.
-//! // Note: There is no need to explicitly specify the color type.
-//! let bmp = DynamicBmp::from_slice(bmp_data).unwrap();
+//! // Parse the BMP file.
+//! // Note that it is necessary to explicitly specify the color type which the colors in the BMP
+//! // file will be converted into.
+//! let bmp = Bmp::<Rgb888>::from_slice(bmp_data).unwrap();
 //!
-//! // Draw the image with the top left corner at (10, 20) by wrapping it in
-//! // an embedded-graphics `Image`.
-//! Image::new(&bmp, Point::new(10, 20)).draw(&mut display)?;
+//! for Pixel(position, color) in bmp.pixels() {
+//!     println!("R: {}, G: {}, B: {} @ ({})", color.r(), color.g(), color.b(), position);
+//! }
 //! # Ok::<(), core::convert::Infallible>(()) }
 //! ```
 //!
 //! ## Accessing the raw image data
 //!
-//! The [`RawBmp`] struct provides methods to access lower level information about a BMP file,
-//! like the BMP header or the raw image data. An instance of this type can be created by using
-//! [`from_slice`] or by accessing the underlying raw object of a [`Bmp`] or [`DynamicBmp`] object
-//! by using [`as_raw`].
+//! For most applications the higher level access provided by [`Bmp`] is sufficient. But in case
+//! lower level access is necessary the [`RawBmp`] struct can be used to access BMP [header
+//! information] and the [color table]. A [`RawBmp`] object can be created directly from image data
+//! by using [`from_slice`] or by accessing the  underlying raw object of a [`Bmp`] object with
+//! [`Bmp::as_raw`].
 //!
-//! ```rust
+//! ```
 //! use embedded_graphics::prelude::*;
 //! use tinybmp::{RawBmp, Bpp, Header, RawPixel, RowOrder};
 //!
@@ -86,9 +85,8 @@
 //!     }
 //! );
 //!
-//! // Check that raw image data slice is the correct length (according to parsed header)
-//! assert_eq!(bmp.image_data().len(), bmp.header().image_data_len as usize);
-//!
+//! # // Check that raw image data slice is the correct length (according to parsed header)
+//! # assert_eq!(bmp.image_data().len(), bmp.header().image_data_len as usize);
 //! // Get an iterator over the pixel coordinates and values in this image and load into a vec
 //! let pixels: Vec<RawPixel> = bmp.pixels().collect();
 //!
@@ -96,41 +94,76 @@
 //! assert_eq!(pixels.len(), 8 * 8);
 //! ```
 //!
-//! [`embedded-graphics`]: https://crates.io/crates/embedded-graphics
-//! [`Header`]: ./header/struct.Header.html
-//! [`Bmp`]: ./struct.Bmp.html
-//! [`as_raw`]: ./struct.Bmp.html#method.as_raw
-//! [`DynamicBmp`]: ./struct.DynamicBmp.html
-//! [`RawBmp`]: ./struct.RawBmp.html
-//! [`from_slice`]: ./struct.RawBmp.html#method.from_slice
-//! [`pixels`]: ./struct.RawBmp.html#method.pixels
-//! [`image_data`]: ./struct.RawBmp.html#method.image_data
+//! # Minimum supported Rust version
+//!
+//! The minimum supported Rust version for embedded-graphics is `1.57` or greater.
+//! Ensure you have the correct version of Rust installed, preferably through <https://rustup.rs>.
+//!
+//! <!-- README-LINKS
+//! [`Bmp`]: https://docs.rs/tinybmp/latest/tinybmp/struct.Bmp.html
+//! [`Bmp::pixels`]: https://docs.rs/tinybmp/latest/tinybmp/struct.Bmp.html#method.pixels
+//! [`Bmp::as_raw`]: https://docs.rs/tinybmp/latest/tinybmp/struct.Bmp.html#method.as_raw
+//! [`RawBmp`]: https://docs.rs/tinybmp/latest/tinybmp/struct.RawBmp.html
+//! [header information]: https://docs.rs/tinybmp/latest/tinybmp/struct.RawBmp.html#method.header
+//! [color table]: https://docs.rs/tinybmp/latest/tinybmp/struct.RawBmp.html#method.color_table
+//! [`from_slice`]: https://docs.rs/tinybmp/latest/tinybmp/struct.RawBmp.html#method.from_slice
+//!
+//! [`embedded_graphics`]: https://docs.rs/embedded_graphics
+//! [color types]: https://docs.rs/embedded-graphics/latest/embedded_graphics/pixelcolor/index.html#structs
+//! [`DrawTarget`]: https://docs.rs/embedded-graphics/latest/embedded_graphics/draw_target/trait.DrawTarget.html
+//! [`Image`]: https://docs.rs/embedded-graphics/latest/embedded_graphics/image/struct.Image.html
+//! README-LINKS -->
+//!
+//! [`DrawTarget`]: embedded_graphics::draw_target::DrawTarget
+//! [`Image`]: embedded_graphics::image::Image
+//! [color types]: embedded_graphics::pixelcolor#structs
+//! [header information]: RawBmp::header
+//! [color table]: RawBmp::color_table
+//! [`from_slice`]: RawBmp::from_slice
 
 #![no_std]
 #![deny(missing_docs)]
 #![deny(missing_debug_implementations)]
+#![deny(missing_copy_implementations)]
+#![deny(trivial_casts)]
+#![deny(trivial_numeric_casts)]
+#![deny(unsafe_code)]
+#![deny(unstable_features)]
+#![deny(unused_import_braces)]
+#![deny(unused_qualifications)]
+#![deny(rustdoc::broken_intra_doc_links)]
+#![deny(rustdoc::private_intra_doc_links)]
 
 use core::marker::PhantomData;
 
-use embedded_graphics::{prelude::*, primitives::Rectangle};
-
-mod color_table;
-mod dynamic_bmp;
-mod header;
-mod parser;
-mod pixels;
-mod raw_bmp;
-mod raw_pixels;
-
-pub use crate::{
-    dynamic_bmp::DynamicBmp,
-    header::{Bpp, ChannelMasks, Header, RowOrder},
-    pixels::Pixels,
-    raw_bmp::RawBmp,
-    raw_pixels::{RawPixel, RawPixels},
+use embedded_graphics::{
+    pixelcolor::{
+        raw::{RawU1, RawU16, RawU24, RawU32, RawU4, RawU8},
+        Rgb555, Rgb565, Rgb888,
+    },
+    prelude::*,
+    primitives::Rectangle,
 };
 
-/// A BMP-format bitmap
+mod color_table;
+mod header;
+mod iter;
+mod parser;
+mod raw_bmp;
+mod raw_iter;
+
+use raw_bmp::ColorType;
+use raw_iter::RawColors;
+
+pub use color_table::ColorTable;
+pub use header::{Bpp, ChannelMasks, Header, RowOrder};
+pub use iter::Pixels;
+pub use raw_bmp::RawBmp;
+pub use raw_iter::{RawPixel, RawPixels};
+
+/// A BMP-format bitmap.
+///
+/// See the [crate-level documentation](crate) for more information.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub struct Bmp<'a, C> {
     raw_bmp: RawBmp<'a>,
@@ -139,33 +172,14 @@ pub struct Bmp<'a, C> {
 
 impl<'a, C> Bmp<'a, C>
 where
-    C: PixelColor,
+    C: PixelColor + From<Rgb555> + From<Rgb565> + From<Rgb888>,
 {
     /// Creates a bitmap object from a byte slice.
     ///
     /// The created object keeps a shared reference to the input and does not dynamically allocate
     /// memory.
-    ///
-    /// The color type must be explicitly specified when this method is called, for example by
-    /// using the turbofish syntax. An error is returned if the bit depth of the specified color
-    /// type doesn't match the bit depth of the BMP file.
     pub fn from_slice(bytes: &'a [u8]) -> Result<Self, ParseError> {
         let raw_bmp = RawBmp::from_slice(bytes)?;
-
-        if C::Raw::BITS_PER_PIXEL != usize::from(raw_bmp.color_bpp().bits()) {
-            if raw_bmp.color_bpp() == Bpp::Bits32 && C::Raw::BITS_PER_PIXEL == 24 {
-                // Allow 24BPP color types for 32BPP images to support RGB888 BMP files with
-                // 4 bytes per pixel.
-                // This check could be improved by using the bit masks available in BMP headers
-                // with version >= 4, but we don't currently parse this information.
-            } else if (raw_bmp.color_bpp() == Bpp::Bits1 || raw_bmp.color_bpp() == Bpp::Bits8)
-                && raw_bmp.color_table().is_some()
-            {
-                // Allow 1BPP and 8BPP images with color tables to be mapped to other color types.
-            } else {
-                return Err(ParseError::MismatchedBpp(raw_bmp.color_bpp().bits()));
-            }
-        }
 
         Ok(Self {
             raw_bmp,
@@ -174,15 +188,16 @@ where
     }
 
     /// Returns an iterator over the pixels in this image.
-    pub fn pixels<'b>(&'b self) -> Pixels<'b, 'a, C> {
-        Pixels::new(self.raw_bmp.pixels())
+    ///
+    /// The iterator always starts at the top left corner of the image, regardless of the row order
+    /// of the BMP file. The coordinate of the first pixel is `(0, 0)`.
+    pub fn pixels(&self) -> Pixels<'_, C> {
+        Pixels::new(self)
     }
 
     /// Returns a reference to the raw BMP image.
     ///
     /// The [`RawBmp`] instance can be used to access lower level information about the BMP file.
-    ///
-    /// [`RawBmp`]: struct.RawBmp.html
     pub fn as_raw(&self) -> &RawBmp<'a> {
         &self.raw_bmp
     }
@@ -190,7 +205,7 @@ where
 
 impl<C> ImageDrawable for Bmp<'_, C>
 where
-    C: PixelColor + From<<C as PixelColor>::Raw>,
+    C: PixelColor + From<Rgb555> + From<Rgb565> + From<Rgb888>,
 {
     type Color = C;
 
@@ -198,7 +213,78 @@ where
     where
         D: DrawTarget<Color = C>,
     {
-        self.as_raw().draw(target)
+        let area = self.bounding_box();
+
+        match self.raw_bmp.color_type {
+            ColorType::Index1 => {
+                if let Some(color_table) = self.raw_bmp.color_table() {
+                    let fallback_color = C::from(Rgb888::BLACK);
+                    let color_table: [C; 2] = [
+                        color_table.get(0).map(Into::into).unwrap_or(fallback_color),
+                        color_table.get(1).map(Into::into).unwrap_or(fallback_color),
+                    ];
+
+                    let colors = RawColors::<RawU1>::new(&self.raw_bmp).map(|index| {
+                        color_table
+                            .get(usize::from(index.into_inner()))
+                            .copied()
+                            .unwrap_or(fallback_color)
+                    });
+                    target.fill_contiguous(&area, colors)
+                } else {
+                    Ok(())
+                }
+            }
+            ColorType::Index4 => {
+                if let Some(color_table) = self.raw_bmp.color_table() {
+                    let fallback_color = C::from(Rgb888::BLACK);
+
+                    let colors = RawColors::<RawU4>::new(&self.raw_bmp).map(|index| {
+                        color_table
+                            .get(u32::from(index.into_inner()))
+                            .map(Into::into)
+                            .unwrap_or(fallback_color)
+                    });
+
+                    target.fill_contiguous(&area, colors)
+                } else {
+                    Ok(())
+                }
+            }
+            ColorType::Index8 => {
+                if let Some(color_table) = self.raw_bmp.color_table() {
+                    let fallback_color = C::from(Rgb888::BLACK);
+
+                    let colors = RawColors::<RawU8>::new(&self.raw_bmp).map(|index| {
+                        color_table
+                            .get(u32::from(index.into_inner()))
+                            .map(Into::into)
+                            .unwrap_or(fallback_color)
+                    });
+
+                    target.fill_contiguous(&area, colors)
+                } else {
+                    Ok(())
+                }
+            }
+            ColorType::Rgb555 => target.fill_contiguous(
+                &area,
+                RawColors::<RawU16>::new(&self.raw_bmp).map(|raw| Rgb555::from(raw).into()),
+            ),
+            ColorType::Rgb565 => target.fill_contiguous(
+                &area,
+                RawColors::<RawU16>::new(&self.raw_bmp).map(|raw| Rgb565::from(raw).into()),
+            ),
+            ColorType::Rgb888 => target.fill_contiguous(
+                &area,
+                RawColors::<RawU24>::new(&self.raw_bmp).map(|raw| Rgb888::from(raw).into()),
+            ),
+            ColorType::Xrgb8888 => target.fill_contiguous(
+                &area,
+                RawColors::<RawU32>::new(&self.raw_bmp)
+                    .map(|raw| Rgb888::from(RawU24::new(raw.into_inner())).into()),
+            ),
+        }
     }
 
     fn draw_sub_image<D>(&self, target: &mut D, area: &Rectangle) -> Result<(), D::Error>
@@ -214,24 +300,15 @@ where
     C: PixelColor,
 {
     fn size(&self) -> Size {
-        self.raw_bmp.size()
+        self.raw_bmp.header().image_size
     }
 }
 
 /// Parse error.
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum ParseError {
-    /// An error occurred while parsing the header.
-    Header,
-
-    /// The image uses a bit depth that isn't supported by tinybmp.
+    /// The image uses an unsupported bit depth.
     UnsupportedBpp(u16),
-
-    /// The image bit depth doesn't match the specified color type.
-    MismatchedBpp(u16),
-
-    /// The image format isn't supported by `DynamicBmp`.
-    UnsupportedDynamicBmpFormat,
 
     /// Unexpected end of file.
     UnexpectedEndOfFile,
@@ -239,16 +316,101 @@ pub enum ParseError {
     /// Invalid file signatures.
     ///
     /// BMP files must start with `BM`.
-    InvalidFileSignature,
-
-    /// Missing color table.
-    ///
-    /// Images with <= 8 BPP must contain a color table.
-    MissingColorTable,
+    InvalidFileSignature([u8; 2]),
 
     /// Unsupported compression method.
     UnsupportedCompressionMethod(u32),
 
     /// Unsupported header length.
     UnsupportedHeaderLength(u32),
+
+    /// Unsupported channel masks.
+    UnsupportedChannelMasks,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const BMP_DATA: &[u8] = include_bytes!("../tests/chessboard-8px-1bit.bmp");
+
+    fn bmp_data() -> [u8; 94] {
+        BMP_DATA.try_into().unwrap()
+    }
+
+    #[test]
+    fn error_unsupported_bpp() {
+        // Replace BPP value with an invalid value of 42.
+        let mut data = bmp_data();
+        data[0x1C..0x1C + 2].copy_from_slice(&42u16.to_le_bytes());
+
+        assert_eq!(
+            Bmp::<Rgb888>::from_slice(&data),
+            Err(ParseError::UnsupportedBpp(42))
+        );
+    }
+
+    #[test]
+    fn error_empty_file() {
+        assert_eq!(
+            Bmp::<Rgb888>::from_slice(&[]),
+            Err(ParseError::UnexpectedEndOfFile)
+        );
+    }
+
+    #[test]
+    fn error_truncated_header() {
+        let data = &BMP_DATA[0..10];
+
+        assert_eq!(
+            Bmp::<Rgb888>::from_slice(data),
+            Err(ParseError::UnexpectedEndOfFile)
+        );
+    }
+
+    #[test]
+    fn error_truncated_image_data() {
+        let (_, data) = BMP_DATA.split_last().unwrap();
+
+        assert_eq!(
+            Bmp::<Rgb888>::from_slice(data),
+            Err(ParseError::UnexpectedEndOfFile)
+        );
+    }
+
+    #[test]
+    fn error_invalid_signature() {
+        // Replace signature with "EG".
+        let mut data = bmp_data();
+        data[0..2].copy_from_slice(b"EG");
+
+        assert_eq!(
+            Bmp::<Rgb888>::from_slice(&data),
+            Err(ParseError::InvalidFileSignature([b'E', b'G']))
+        );
+    }
+
+    #[test]
+    fn error_compression_method() {
+        // Replace compression method with BI_JPEG (4).
+        let mut data = bmp_data();
+        data[0x1E..0x1E + 4].copy_from_slice(&4u32.to_le_bytes());
+
+        assert_eq!(
+            Bmp::<Rgb888>::from_slice(&data),
+            Err(ParseError::UnsupportedCompressionMethod(4))
+        );
+    }
+
+    #[test]
+    fn error_header_length() {
+        // Replace header length with invalid length of 16.
+        let mut data = bmp_data();
+        data[0x0E..0x0E + 4].copy_from_slice(&16u32.to_le_bytes());
+
+        assert_eq!(
+            Bmp::<Rgb888>::from_slice(&data),
+            Err(ParseError::UnsupportedHeaderLength(16))
+        );
+    }
 }
