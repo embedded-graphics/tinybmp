@@ -8,7 +8,7 @@
 //!
 //! ## Draw a BMP image to an embedded-graphics draw target
 //!
-//! The [`Bmp`] struct is used together with [`embedded_graphics`]'s [`Image`] struct to display
+//! The [`Bmp`] struct is used together with [`embedded_graphics`]' [`Image`] struct to display
 //! BMP files on any draw target.
 //!
 //! ```
@@ -35,7 +35,7 @@
 //!
 //! To access the image data for other applications the [`Bmp::pixels`] method returns an iterator
 //! over all pixels in the BMP file. The colors inside the BMP file will automatically converted
-//! to one of  [`embedded_graphics`]'s [color types].
+//! to one of the [color types] in [`embedded_graphics`].
 //!
 //! ```
 //! # fn main() -> Result<(), core::convert::Infallible> {
@@ -61,7 +61,7 @@
 //! For most applications the higher level access provided by [`Bmp`] is sufficient. But in case
 //! lower level access is necessary the [`RawBmp`] struct can be used to access BMP [header
 //! information] and the [color table]. A [`RawBmp`] object can be created directly from image data
-//! by using [`from_slice`] or by accessing the  underlying raw object of a [`Bmp`] object with
+//! by using [`from_slice`] or by accessing the underlying raw object of a [`Bmp`] object with
 //! [`Bmp::as_raw`].
 //!
 //! ```
@@ -96,7 +96,7 @@
 //!
 //! # Minimum supported Rust version
 //!
-//! The minimum supported Rust version for embedded-graphics is `1.57` or greater.
+//! The minimum supported Rust version for tinybmp is `1.57` or greater.
 //! Ensure you have the correct version of Rust installed, preferably through <https://rustup.rs>.
 //!
 //! <!-- README-LINKS
