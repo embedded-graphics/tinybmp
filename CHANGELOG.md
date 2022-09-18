@@ -14,7 +14,7 @@
 
 ### Changed
 
-- **(breaking)** [#28](https://github.com/embedded-graphics/tinybmp/pull/28) Use 1.57 as the MSRV.
+- **(breaking)** [#31](https://github.com/embedded-graphics/tinybmp/pull/31) Use 1.61 as the MSRV.
 - **(breaking)** [#28](https://github.com/embedded-graphics/tinybmp/pull/28) Merged `DynamicBmp` and `Bmp`. `Bmp` will now automatically convert colors and doesn't require explicit color type annotations anymore.
 - **(breaking)** [#28](https://github.com/embedded-graphics/tinybmp/pull/28) Changed bounds for the `Bmp` color type from `C: PixelColor + From<<C as PixelColor>::Raw>` to `C: PixelColor + From<Rgb555> + From<Rgb565> + From<Rgb888>`.
 - **(breaking)** [#28](https://github.com/embedded-graphics/tinybmp/pull/28) Added additional `ParseError` variants for improved reporting of errors.
