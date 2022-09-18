@@ -198,7 +198,7 @@ where
     /// Returns a reference to the raw BMP image.
     ///
     /// The [`RawBmp`] instance can be used to access lower level information about the BMP file.
-    pub fn as_raw(&self) -> &RawBmp<'a> {
+    pub const fn as_raw(&self) -> &RawBmp<'a> {
         &self.raw_bmp
     }
 }

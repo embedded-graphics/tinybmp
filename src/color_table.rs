@@ -22,13 +22,13 @@ pub struct ColorTable<'a> {
 }
 
 impl<'a> ColorTable<'a> {
-    pub(crate) fn new(data: &'a [u8]) -> Self {
+    pub(crate) const fn new(data: &'a [u8]) -> Self {
         Self { data }
     }
 
     /// Returns the number of entries.
     pub const fn len(&self) -> usize {
-        return self.data.len() / 4;
+        self.data.len() / 4
     }
 
     /// Returns a color table entry.
