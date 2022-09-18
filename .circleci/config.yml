@@ -21,6 +21,7 @@ precheck_steps: &precheck_steps
 
 # Build crates for embedded target
 target_steps: &target_steps
+  resource_class: large
   docker: *docker
   steps:
     - checkout
