@@ -101,7 +101,7 @@ impl DibHeader {
             input,
             Self {
                 header_type,
-                image_size: Size::new(image_width, image_height.abs() as u32),
+                image_size: Size::new(image_width, image_height.unsigned_abs()),
                 image_data_len,
                 bpp,
                 channel_masks,

@@ -10,7 +10,7 @@ pub fn take<const N: usize>(input: &[u8]) -> Result<(&[u8], [u8; N]), ParseError
 
 pub fn take_slice(input: &[u8], length: usize) -> Result<(&[u8], &[u8]), ParseError> {
     if let (Some(value), Some(rest)) = (input.get(0..length), input.get(length..)) {
-        Ok((rest, value.try_into().unwrap()))
+        Ok((rest, value))
     } else {
         Err(ParseError::UnexpectedEndOfFile)
     }
