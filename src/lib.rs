@@ -365,6 +365,9 @@ pub enum ParseError {
 
     /// Unsupported channel masks.
     UnsupportedChannelMasks,
+
+    /// Invalid image dimensions.
+    InvalidImageDimensions,
 }
 
 #[cfg(test)]
