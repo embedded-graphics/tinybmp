@@ -195,6 +195,45 @@ where
         Pixels::new(self)
     }
 
+    /// Returns the color of a pixel.
+    ///
+    /// Returns `None` if `p` is outside the image bounding box.
+    pub fn pixel(&self, p: Point) -> Option<C> {
+        match self.raw_bmp.color_type {
+            ColorType::Index1 => self
+                .raw_bmp
+                .color_table()
+                .and_then(|color_table| color_table.get(self.raw_bmp.pixel(p)?))
+                .map(Into::into),
+            ColorType::Index4 => self
+                .raw_bmp
+                .color_table()
+                .and_then(|color_table| color_table.get(self.raw_bmp.pixel(p)?))
+                .map(Into::into),
+            ColorType::Index8 => self
+                .raw_bmp
+                .color_table()
+                .and_then(|color_table| color_table.get(self.raw_bmp.pixel(p)?))
+                .map(Into::into),
+            ColorType::Rgb555 => self
+                .raw_bmp
+                .pixel(p)
+                .map(|raw| Rgb555::from(RawU16::from_u32(raw)).into()),
+            ColorType::Rgb565 => self
+                .raw_bmp
+                .pixel(p)
+                .map(|raw| Rgb565::from(RawU16::from_u32(raw)).into()),
+            ColorType::Rgb888 => self
+                .raw_bmp
+                .pixel(p)
+                .map(|raw| Rgb888::from(RawU24::from_u32(raw)).into()),
+            ColorType::Xrgb8888 => self
+                .raw_bmp
+                .pixel(p)
+                .map(|raw| Rgb888::from(RawU24::from_u32(raw)).into()),
+        }
+    }
+
     /// Returns a reference to the raw BMP image.
     ///
     /// The [`RawBmp`] instance can be used to access lower level information about the BMP file.

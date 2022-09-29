@@ -11,6 +11,7 @@
 - [#28](https://github.com/embedded-graphics/tinybmp/pull/28) Added a `ColorTable` struct and the `RawBmp::color_table` getter to access the BMP files color table.
 - [#28](https://github.com/embedded-graphics/tinybmp/pull/28) Added support for 4bpp images with color table.
 - [#28](https://github.com/embedded-graphics/tinybmp/pull/28) Added `display` example to display BMP images using the embedded-graphics simulator.
+- [#34](https://github.com/embedded-graphics/tinybmp/pull/34) Added `Bmp::pixel` and `RawBmp::pixel` to access individual pixels.
 
 ### Changed
 

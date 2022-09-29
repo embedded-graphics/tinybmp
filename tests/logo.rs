@@ -101,10 +101,40 @@ where
     Framebuffer::from_image(bmp)
 }
 
+fn draw_bmp_pixel_getter<C>(data: &[u8]) -> Framebuffer<C>
+where
+    C: PixelColor + From<Rgb555> + From<Rgb565> + From<Rgb888> + std::fmt::Debug,
+{
+    let bmp = Bmp::<C>::from_slice(data).unwrap();
+
+    let mut fb = Framebuffer::new();
+
+    let bb = bmp.bounding_box();
+    assert_eq!(bb.top_left, Point::zero());
+    assert_eq!(bb.size, Size::new(240, 320));
+    assert_eq!(bb.points().count(), 320 * 240);
+
+    bmp.bounding_box()
+        .points()
+        .map(|p| Pixel(p, bmp.pixel(p).unwrap()))
+        .draw(&mut fb)
+        .unwrap();
+
+    fb
+}
+
 #[test]
 fn logo_indexed_1bpp() {
     let raw = draw_raw::<Bgr888>(include_bytes!("logo-indexed-1bpp.raw"));
     let bmp = draw_bmp::<Bgr888>(include_bytes!("logo-indexed-1bpp.bmp"));
+
+    bmp.assert_eq(&raw);
+}
+
+#[test]
+fn logo_indexed_1bpp_pixel_getter() {
+    let raw = draw_raw::<Bgr888>(include_bytes!("logo-indexed-1bpp.raw"));
+    let bmp = draw_bmp_pixel_getter::<Bgr888>(include_bytes!("logo-indexed-1bpp.bmp"));
 
     bmp.assert_eq(&raw);
 }
@@ -118,9 +148,25 @@ fn logo_indexed_4bpp() {
 }
 
 #[test]
+fn logo_indexed_4bpp_pixel_getter() {
+    let raw = draw_raw::<Bgr888>(include_bytes!("logo-indexed-4bpp.raw"));
+    let bmp = draw_bmp_pixel_getter::<Bgr888>(include_bytes!("logo-indexed-4bpp.bmp"));
+
+    bmp.assert_eq(&raw);
+}
+
+#[test]
 fn logo_indexed_8bpp() {
     let raw = draw_raw::<Bgr888>(include_bytes!("logo-indexed-8bpp.raw"));
     let bmp = draw_bmp::<Bgr888>(include_bytes!("logo-indexed-8bpp.bmp"));
+
+    bmp.assert_eq(&raw);
+}
+
+#[test]
+fn logo_indexed_8bpp_pixel_getter() {
+    let raw = draw_raw::<Bgr888>(include_bytes!("logo-indexed-8bpp.raw"));
+    let bmp = draw_bmp_pixel_getter::<Bgr888>(include_bytes!("logo-indexed-8bpp.bmp"));
 
     bmp.assert_eq(&raw);
 }
@@ -134,9 +180,25 @@ fn logo_rgb555() {
 }
 
 #[test]
+fn logo_rgb555_pixel_getter() {
+    let raw = draw_raw::<Rgb555>(include_bytes!("logo-rgb555.raw"));
+    let bmp = draw_bmp_pixel_getter::<Rgb555>(include_bytes!("logo-rgb555.bmp"));
+
+    bmp.assert_eq(&raw);
+}
+
+#[test]
 fn logo_rgb565() {
     let raw = draw_raw::<Rgb565>(include_bytes!("logo-rgb565.raw"));
     let bmp = draw_bmp::<Rgb565>(include_bytes!("logo-rgb565.bmp"));
+
+    bmp.assert_eq(&raw);
+}
+
+#[test]
+fn logo_rgb565_pixel_getter() {
+    let raw = draw_raw::<Rgb565>(include_bytes!("logo-rgb565.raw"));
+    let bmp = draw_bmp_pixel_getter::<Rgb565>(include_bytes!("logo-rgb565.bmp"));
 
     bmp.assert_eq(&raw);
 }
@@ -150,9 +212,25 @@ fn logo_rgb888_24bpp() {
 }
 
 #[test]
+fn logo_rgb888_24bpp_pixel_getter() {
+    let raw = draw_raw::<Bgr888>(include_bytes!("logo-rgb888.raw"));
+    let bmp = draw_bmp_pixel_getter::<Bgr888>(include_bytes!("logo-rgb888-24bpp.bmp"));
+
+    bmp.assert_eq(&raw);
+}
+
+#[test]
 fn logo_rgb888_32bpp() {
     let raw = draw_raw::<Bgr888>(include_bytes!("logo-rgb888.raw"));
     let bmp = draw_bmp::<Bgr888>(include_bytes!("logo-rgb888-32bpp.bmp"));
+
+    bmp.assert_eq(&raw);
+}
+
+#[test]
+fn logo_rgb888_32bpp_pixel_getter() {
+    let raw = draw_raw::<Bgr888>(include_bytes!("logo-rgb888.raw"));
+    let bmp = draw_bmp_pixel_getter::<Bgr888>(include_bytes!("logo-rgb888-32bpp.bmp"));
 
     bmp.assert_eq(&raw);
 }
