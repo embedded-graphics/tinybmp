@@ -44,10 +44,6 @@ impl<'a> RawBmp<'a> {
 
         let color_type = ColorType::from_header(&header)?;
 
-        if header.image_size.width == 0 || header.image_size.height == 0 {
-            return Err(ParseError::InvalidImageDimensions);
-        }
-
         let height = header
             .image_size
             .height

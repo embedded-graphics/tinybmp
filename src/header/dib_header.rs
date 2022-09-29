@@ -48,7 +48,7 @@ impl DibHeader {
         };
 
         // Fields common to all DIB variants
-        let (dib_header_data, image_width) = le_u32(dib_header_data)?;
+        let (dib_header_data, image_width) = le_i32(dib_header_data)?;
         let (dib_header_data, image_height) = le_i32(dib_header_data)?;
         let (dib_header_data, _color_planes) = le_u16(dib_header_data)?;
         let (dib_header_data, bpp) = Bpp::parse(dib_header_data)?;
@@ -91,6 +91,10 @@ impl DibHeader {
             colors_used
         };
 
+        if image_width <= 0 || image_height == 0 {
+            return Err(ParseError::InvalidImageDimensions);
+        }
+
         let row_order = if image_height < 0 {
             RowOrder::TopDown
         } else {
@@ -101,7 +105,7 @@ impl DibHeader {
             input,
             Self {
                 header_type,
-                image_size: Size::new(image_width, image_height.unsigned_abs()),
+                image_size: Size::new(image_width.unsigned_abs(), image_height.unsigned_abs()),
                 image_data_len,
                 bpp,
                 channel_masks,
