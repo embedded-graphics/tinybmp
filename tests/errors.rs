@@ -1,5 +1,5 @@
 use embedded_graphics::pixelcolor::Rgb888;
-use tinybmp::{ParseError, Bmp};
+use tinybmp::{Bmp, ParseError};
 
 #[test]
 fn zero_width() {
