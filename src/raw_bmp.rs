@@ -94,6 +94,9 @@ impl<'a> RawBmp<'a> {
             return None;
         }
 
+        // The specialized implementations of `Iterator::nth` for `Chunks` and
+        // `RawDataSlice::IntoIter` are `O(1)`, which also makes this method `O(1)`.
+
         let mut row_chunks = self.image_data.chunks_exact(self.header.bytes_per_row());
         let row = match self.header.row_order {
             RowOrder::BottomUp => row_chunks.nth_back(p.y as usize),
