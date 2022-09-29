@@ -1,8 +1,15 @@
+use embedded_graphics::{
+    geometry::Point,
+    iterator::raw::RawDataSlice,
+    pixelcolor::raw::{LittleEndian, RawU1, RawU16, RawU24, RawU32, RawU4, RawU8},
+    prelude::RawData,
+};
+
 use crate::{
     color_table::ColorTable,
     header::{Bpp, Header},
     raw_iter::RawPixels,
-    ChannelMasks, ParseError,
+    ChannelMasks, ParseError, RowOrder,
 };
 
 /// Low-level access to BMP image data.
@@ -73,6 +80,52 @@ impl<'a> RawBmp<'a> {
     /// instead.
     pub fn pixels(&self) -> RawPixels<'_> {
         RawPixels::new(self)
+    }
+
+    /// Returns the raw color of a pixel.
+    ///
+    /// Returns `None` if `p` is outside the image bounding box. Note that this function doesn't
+    /// apply a color map, if the image contains one.
+    pub fn pixel(&self, p: Point) -> Option<u32> {
+        let width = self.header.image_size.width as i32;
+        let height = self.header.image_size.height as i32;
+
+        if p.x < 0 || p.x >= width || p.y < 0 || p.y >= height {
+            return None;
+        }
+
+        let mut row_chunks = self.image_data.chunks_exact(self.header.bytes_per_row());
+        let row = match self.header.row_order {
+            RowOrder::BottomUp => row_chunks.nth_back(p.y as usize),
+            RowOrder::TopDown => row_chunks.nth(p.y as usize),
+        }?;
+
+        match self.header.bpp {
+            Bpp::Bits1 => RawDataSlice::<RawU1, LittleEndian>::new(row)
+                .into_iter()
+                .nth(p.x as usize)
+                .map(|raw| u32::from(raw.into_inner())),
+            Bpp::Bits4 => RawDataSlice::<RawU4, LittleEndian>::new(row)
+                .into_iter()
+                .nth(p.x as usize)
+                .map(|raw| u32::from(raw.into_inner())),
+            Bpp::Bits8 => RawDataSlice::<RawU8, LittleEndian>::new(row)
+                .into_iter()
+                .nth(p.x as usize)
+                .map(|raw| u32::from(raw.into_inner())),
+            Bpp::Bits16 => RawDataSlice::<RawU16, LittleEndian>::new(row)
+                .into_iter()
+                .nth(p.x as usize)
+                .map(|raw| u32::from(raw.into_inner())),
+            Bpp::Bits24 => RawDataSlice::<RawU24, LittleEndian>::new(row)
+                .into_iter()
+                .nth(p.x as usize)
+                .map(|raw| raw.into_inner()),
+            Bpp::Bits32 => RawDataSlice::<RawU32, LittleEndian>::new(row)
+                .into_iter()
+                .nth(p.x as usize)
+                .map(|raw| raw.into_inner()),
+        }
     }
 }
 

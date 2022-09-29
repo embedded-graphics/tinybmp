@@ -71,6 +71,19 @@ enum DynamicRawColors<'a> {
     Bpp32(RawColors<'a, RawU32>),
 }
 
+impl<'a> DynamicRawColors<'a> {
+    pub fn new(raw_bmp: &'a RawBmp<'a>) -> Self {
+        match raw_bmp.header().bpp {
+            Bpp::Bits1 => DynamicRawColors::Bpp1(RawColors::new(raw_bmp)),
+            Bpp::Bits4 => DynamicRawColors::Bpp4(RawColors::new(raw_bmp)),
+            Bpp::Bits8 => DynamicRawColors::Bpp8(RawColors::new(raw_bmp)),
+            Bpp::Bits16 => DynamicRawColors::Bpp16(RawColors::new(raw_bmp)),
+            Bpp::Bits24 => DynamicRawColors::Bpp24(RawColors::new(raw_bmp)),
+            Bpp::Bits32 => DynamicRawColors::Bpp32(RawColors::new(raw_bmp)),
+        }
+    }
+}
+
 /// Iterator over individual BMP pixels.
 ///
 /// Each pixel is returned as a `u32` regardless of the bit depth of the source image.
@@ -82,19 +95,10 @@ pub struct RawPixels<'a> {
 
 impl<'a> RawPixels<'a> {
     pub(crate) fn new(raw_bmp: &'a RawBmp<'a>) -> Self {
-        let header = raw_bmp.header();
-
-        let colors = match header.bpp {
-            Bpp::Bits1 => DynamicRawColors::Bpp1(RawColors::new(raw_bmp)),
-            Bpp::Bits4 => DynamicRawColors::Bpp4(RawColors::new(raw_bmp)),
-            Bpp::Bits8 => DynamicRawColors::Bpp8(RawColors::new(raw_bmp)),
-            Bpp::Bits16 => DynamicRawColors::Bpp16(RawColors::new(raw_bmp)),
-            Bpp::Bits24 => DynamicRawColors::Bpp24(RawColors::new(raw_bmp)),
-            Bpp::Bits32 => DynamicRawColors::Bpp32(RawColors::new(raw_bmp)),
-        };
-        let points = Rectangle::new(Point::zero(), header.image_size).points();
-
-        Self { colors, points }
+        Self {
+            colors: DynamicRawColors::new(raw_bmp),
+            points: Rectangle::new(Point::zero(), raw_bmp.header().image_size).points(),
+        }
     }
 }
 
