@@ -23,6 +23,10 @@
 - [#28](https://github.com/embedded-graphics/tinybmp/pull/28) `Bpp::bits`, `RawBmp::image_data`, `RawBmp::header`, and `RawPixel::new` are now `const`.
 - [#28](https://github.com/embedded-graphics/tinybmp/pull/28) BMP files with incomplete image data are now detected by `Bmp::from_slice`.
 
+### Fixed
+
+- [#32](https://github.com/embedded-graphics/tinybmp/pull/32) Report error for images with `width <= 0` or `height == 0` instead of causing a panic.
+
 ## [0.3.3] - 2022-04-18
 
 ### Fixed

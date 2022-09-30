@@ -44,10 +44,21 @@ impl<'a> RawBmp<'a> {
 
         let color_type = ColorType::from_header(&header)?;
 
-        let data_length = header.bytes_per_row() * header.image_size.height as usize;
+        let height = header
+            .image_size
+            .height
+            .try_into()
+            .map_err(|_| ParseError::InvalidImageDimensions)?;
 
+        let data_length = header
+            .bytes_per_row()
+            .checked_mul(height)
+            .ok_or(ParseError::InvalidImageDimensions)?;
+
+        // The `get` is split into two calls to prevent an possible integer overflow.
         let image_data = &bytes
-            .get(header.image_data_start..header.image_data_start + data_length)
+            .get(header.image_data_start..)
+            .and_then(|bytes| bytes.get(..data_length))
             .ok_or(ParseError::UnexpectedEndOfFile)?;
 
         Ok(Self {
