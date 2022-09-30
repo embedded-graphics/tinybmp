@@ -9,16 +9,15 @@
 
 A small BMP parser primarily for embedded, no-std environments but usable anywhere.
 
-This crate is primarily targeted at drawing BMP images to [`embedded_graphics`]
-[`DrawTarget`]s, but can also be used to parse BMP
-files for other applications.
+This crate is primarily targeted at drawing BMP images to [`embedded_graphics`] [`DrawTarget`]s,
+but can also be used to parse BMP files for other applications.
 
 ## Examples
 
 ### Draw a BMP image to an embedded-graphics draw target
 
-The [`Bmp`] struct is used together with [`embedded_graphics`]' [`Image`] struct to display
-BMP files on any draw target.
+The [`Bmp`] struct is used together with [`embedded_graphics`]' [`Image`] struct to display BMP
+files on any draw target.
 
 ```rust
 use embedded_graphics::{image::Image, prelude::*};
@@ -38,8 +37,8 @@ Image::new(&bmp, Point::new(10, 20)).draw(&mut display)?;
 ### Using the pixel iterator
 
 To access the image data for other applications the [`Bmp::pixels`] method returns an iterator
-over all pixels in the BMP file. The colors inside the BMP file will automatically converted
-to one of the [color types] in [`embedded_graphics`].
+over all pixels in the BMP file. The colors inside the BMP file will automatically converted to
+one of the [color types] in [`embedded_graphics`].
 
 ```rust
 use embedded_graphics::{pixelcolor::Rgb888, prelude::*};
@@ -58,6 +57,28 @@ for Pixel(position, color) in bmp.pixels() {
 }
 ```
 
+### Accessing individual pixels
+
+[`Bmp::pixel`] can be used to get the color of individual pixels. The returned color will be automatically
+converted to one of the [color types] in [`embedded_graphics`].
+
+```rust
+use embedded_graphics::{pixelcolor::Rgb888, prelude::*};
+use tinybmp::Bmp;
+
+// Include the BMP file data.
+let bmp_data = include_bytes!("../tests/chessboard-8px-24bit.bmp");
+
+// Parse the BMP file.
+// Note that it is necessary to explicitly specify the color type which the colors in the BMP
+// file will be converted into.
+let bmp = Bmp::<Rgb888>::from_slice(bmp_data).unwrap();
+
+let pixel = bmp.pixel(Point::new(3, 2));
+
+assert_eq!(pixel, Some(Rgb888::WHITE));
+```
+
 ### Accessing the raw image data
 
 For most applications the higher level access provided by [`Bmp`] is sufficient. But in case
@@ -65,6 +86,9 @@ lower level access is necessary the [`RawBmp`] struct can be used to access BMP 
 information] and the [color table]. A [`RawBmp`] object can be created directly from image data
 by using [`from_slice`] or by accessing the underlying raw object of a [`Bmp`] object with
 [`Bmp::as_raw`].
+
+Similar to [`Bmp::pixel`], [`RawBmp::pixel`] can be used to get raw pixel color values as a
+`u32`.
 
 ```rust
 use embedded_graphics::prelude::*;
@@ -92,17 +116,25 @@ let pixels: Vec<RawPixel> = bmp.pixels().collect();
 
 // Loaded example image is 8x8px
 assert_eq!(pixels.len(), 8 * 8);
+
+// Individual raw pixel values can also be read
+let pixel = bmp.pixel(Point::new(3, 2));
+
+// The raw value for a white pixel in the source image
+assert_eq!(pixel, Some(0xFFFFFFu32));
 ```
 
 ## Minimum supported Rust version
 
-The minimum supported Rust version for tinybmp is `1.61` or greater.
-Ensure you have the correct version of Rust installed, preferably through <https://rustup.rs>.
+The minimum supported Rust version for tinybmp is `1.61` or greater. Ensure you have the correct
+version of Rust installed, preferably through <https://rustup.rs>.
 
 [`Bmp`]: https://docs.rs/tinybmp/latest/tinybmp/struct.Bmp.html
 [`Bmp::pixels`]: https://docs.rs/tinybmp/latest/tinybmp/struct.Bmp.html#method.pixels
+[`Bmp::pixel`]: https://docs.rs/tinybmp/latest/tinybmp/struct.Bmp.html#method.pixel
 [`Bmp::as_raw`]: https://docs.rs/tinybmp/latest/tinybmp/struct.Bmp.html#method.as_raw
 [`RawBmp`]: https://docs.rs/tinybmp/latest/tinybmp/struct.RawBmp.html
+[`RawBmp::pixel`]: https://docs.rs/tinybmp/latest/tinybmp/struct.RawBmp.html#method.pixel
 [header information]: https://docs.rs/tinybmp/latest/tinybmp/struct.RawBmp.html#method.header
 [color table]: https://docs.rs/tinybmp/latest/tinybmp/struct.RawBmp.html#method.color_table
 [`from_slice`]: https://docs.rs/tinybmp/latest/tinybmp/struct.RawBmp.html#method.from_slice
