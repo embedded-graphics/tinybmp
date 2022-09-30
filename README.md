@@ -57,9 +57,9 @@ for Pixel(position, color) in bmp.pixels() {
 }
 ```
 
-### Getting an individual pixel
+### Accessing individual pixels
 
-To access individual pixels, use [`Bmp::pixel`]. The color returned will be automatically
+[`Bmp::pixel`] can be used to get the color of individual pixels. The returned color will be automatically
 converted to one of the [color types] in [`embedded_graphics`].
 
 ```rust
@@ -121,7 +121,7 @@ assert_eq!(pixels.len(), 8 * 8);
 let pixel = bmp.pixel(Point::new(3, 2));
 
 // The raw value for a white pixel in the source image
-assert_eq!(pixel, Some(16777215u32));
+assert_eq!(pixel, Some(0xFFFFFFu32));
 ```
 
 ## Minimum supported Rust version
