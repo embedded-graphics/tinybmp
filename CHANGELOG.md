@@ -6,6 +6,10 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+- **(breaking)** [#XX](https://github.com/embedded-graphics/tinybmp/pull/XX) Updated `embedded-graphics` dependency to `0.8`.
+
 ## [0.4.0] - 2022-09-30
 
 ### Added
