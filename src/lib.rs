@@ -62,7 +62,7 @@
 //!
 //! ```
 //! # fn main() -> Result<(), core::convert::Infallible> {
-//! use embedded_graphics::{pixelcolor::Rgb888, prelude::*};
+//! use embedded_graphics::{pixelcolor::Rgb888, image::GetPixel, prelude::*};
 //! use tinybmp::Bmp;
 //!
 //! // Include the BMP file data.
@@ -171,6 +171,7 @@
 use core::marker::PhantomData;
 
 use embedded_graphics::{
+    image::GetPixel,
     pixelcolor::{
         raw::{RawU1, RawU16, RawU24, RawU32, RawU4, RawU8},
         Rgb555, Rgb565, Rgb888,
@@ -227,45 +228,6 @@ where
     /// of the BMP file. The coordinate of the first pixel is `(0, 0)`.
     pub fn pixels(&self) -> Pixels<'_, C> {
         Pixels::new(self)
-    }
-
-    /// Returns the color of a pixel.
-    ///
-    /// Returns `None` if `p` is outside the image bounding box.
-    pub fn pixel(&self, p: Point) -> Option<C> {
-        match self.raw_bmp.color_type {
-            ColorType::Index1 => self
-                .raw_bmp
-                .color_table()
-                .and_then(|color_table| color_table.get(self.raw_bmp.pixel(p)?))
-                .map(Into::into),
-            ColorType::Index4 => self
-                .raw_bmp
-                .color_table()
-                .and_then(|color_table| color_table.get(self.raw_bmp.pixel(p)?))
-                .map(Into::into),
-            ColorType::Index8 => self
-                .raw_bmp
-                .color_table()
-                .and_then(|color_table| color_table.get(self.raw_bmp.pixel(p)?))
-                .map(Into::into),
-            ColorType::Rgb555 => self
-                .raw_bmp
-                .pixel(p)
-                .map(|raw| Rgb555::from(RawU16::from_u32(raw)).into()),
-            ColorType::Rgb565 => self
-                .raw_bmp
-                .pixel(p)
-                .map(|raw| Rgb565::from(RawU16::from_u32(raw)).into()),
-            ColorType::Rgb888 => self
-                .raw_bmp
-                .pixel(p)
-                .map(|raw| Rgb888::from(RawU24::from_u32(raw)).into()),
-            ColorType::Xrgb8888 => self
-                .raw_bmp
-                .pixel(p)
-                .map(|raw| Rgb888::from(RawU24::from_u32(raw)).into()),
-        }
     }
 
     /// Returns a reference to the raw BMP image.
@@ -374,6 +336,49 @@ where
 {
     fn size(&self) -> Size {
         self.raw_bmp.header().image_size
+    }
+}
+
+impl<C> GetPixel for Bmp<'_, C>
+where
+    C: PixelColor + From<Rgb555> + From<Rgb565> + From<Rgb888>,
+{
+    type Color = C;
+
+    fn pixel(&self, p: Point) -> Option<Self::Color> {
+        match self.raw_bmp.color_type {
+            ColorType::Index1 => self
+                .raw_bmp
+                .color_table()
+                .and_then(|color_table| color_table.get(self.raw_bmp.pixel(p)?))
+                .map(Into::into),
+            ColorType::Index4 => self
+                .raw_bmp
+                .color_table()
+                .and_then(|color_table| color_table.get(self.raw_bmp.pixel(p)?))
+                .map(Into::into),
+            ColorType::Index8 => self
+                .raw_bmp
+                .color_table()
+                .and_then(|color_table| color_table.get(self.raw_bmp.pixel(p)?))
+                .map(Into::into),
+            ColorType::Rgb555 => self
+                .raw_bmp
+                .pixel(p)
+                .map(|raw| Rgb555::from(RawU16::from_u32(raw)).into()),
+            ColorType::Rgb565 => self
+                .raw_bmp
+                .pixel(p)
+                .map(|raw| Rgb565::from(RawU16::from_u32(raw)).into()),
+            ColorType::Rgb888 => self
+                .raw_bmp
+                .pixel(p)
+                .map(|raw| Rgb888::from(RawU24::from_u32(raw)).into()),
+            ColorType::Xrgb8888 => self
+                .raw_bmp
+                .pixel(p)
+                .map(|raw| Rgb888::from(RawU24::from_u32(raw)).into()),
+        }
     }
 }
 

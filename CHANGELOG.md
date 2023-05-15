@@ -6,6 +6,11 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Changed
+
+- **(breaking)** [#39](https://github.com/embedded-graphics/tinybmp/pull/39) Updated `embedded-graphics` dependency to `0.8`.
+- **(breaking)** [#39](https://github.com/embedded-graphics/tinybmp/pull/39) Replaced `Bmp::pixel` method with `embedded_graphics::image::GetPixel` impl.
+
 ## [0.4.0] - 2022-09-30
 
 ### Added

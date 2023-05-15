@@ -1,5 +1,5 @@
 use embedded_graphics::{
-    image::{Image, ImageRaw},
+    image::{GetPixel, Image, ImageRaw},
     iterator::raw::RawDataSlice,
     pixelcolor::{raw::LittleEndian, Bgr888, Rgb555, Rgb565, Rgb888},
     prelude::*,

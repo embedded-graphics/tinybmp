@@ -63,7 +63,7 @@ for Pixel(position, color) in bmp.pixels() {
 converted to one of the [color types] in [`embedded_graphics`].
 
 ```rust
-use embedded_graphics::{pixelcolor::Rgb888, prelude::*};
+use embedded_graphics::{pixelcolor::Rgb888, image::GetPixel, prelude::*};
 use tinybmp::Bmp;
 
 // Include the BMP file data.
