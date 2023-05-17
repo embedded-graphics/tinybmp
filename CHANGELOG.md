@@ -6,6 +6,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [0.5.0] - 2023-05-17
+
 ### Changed
 
 - **(breaking)** [#39](https://github.com/embedded-graphics/tinybmp/pull/39) Updated `embedded-graphics` dependency to `0.8`.
@@ -159,7 +161,8 @@
 - Release `tinybmp` crate to crates.io
 
 <!-- next-url -->
-[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/v0.4.0...HEAD
+[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/embedded-graphics/tinybmp/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.1...v0.3.2
