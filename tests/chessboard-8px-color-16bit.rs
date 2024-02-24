@@ -1,5 +1,5 @@
 use embedded_graphics::prelude::*;
-use tinybmp::{Bpp, ChannelMasks, Header, RawBmp, RowOrder};
+use tinybmp::{Bpp, ChannelMasks, CompressionMethod, Header, RawBmp, RowOrder};
 
 #[test]
 fn chessboard_8px_color_16bit() {
@@ -16,6 +16,7 @@ fn chessboard_8px_color_16bit() {
             image_data_len: 128,
             channel_masks: Some(ChannelMasks::RGB565),
             row_order: RowOrder::BottomUp,
+            compression_method: CompressionMethod::Bitfields,
         }
     );
 

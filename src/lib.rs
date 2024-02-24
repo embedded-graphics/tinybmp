@@ -92,7 +92,7 @@
 //!
 //! ```
 //! use embedded_graphics::prelude::*;
-//! use tinybmp::{RawBmp, Bpp, Header, RawPixel, RowOrder};
+//! use tinybmp::{RawBmp, Bpp, Header, RawPixel, RowOrder, CompressionMethod};
 //!
 //! let bmp = RawBmp::from_slice(include_bytes!("../tests/chessboard-8px-24bit.bmp"))
 //!     .expect("Failed to parse BMP image");
@@ -108,6 +108,7 @@
 //!         image_data_len: 192,
 //!         channel_masks: None,
 //!         row_order: RowOrder::BottomUp,
+//!         compression_method: CompressionMethod::Rgb,
 //!     }
 //! );
 //!
@@ -191,6 +192,7 @@ use raw_bmp::ColorType;
 use raw_iter::RawColors;
 
 pub use color_table::ColorTable;
+pub use header::CompressionMethod;
 pub use header::{Bpp, ChannelMasks, Header, RowOrder};
 pub use iter::Pixels;
 pub use raw_bmp::RawBmp;

@@ -104,6 +104,9 @@ pub struct Header {
 
     /// Row order of the image data within the file
     pub row_order: RowOrder,
+
+    /// The compression method
+    pub compression_method: CompressionMethod,
 }
 
 impl Header {
@@ -144,6 +147,7 @@ impl Header {
                     bpp: dib_header.bpp,
                     channel_masks: dib_header.channel_masks,
                     row_order: dib_header.row_order,
+                    compression_method: dib_header.compression,
                 },
                 color_table,
             ),
@@ -199,16 +203,29 @@ impl ChannelMasks {
     };
 }
 
+/// Describes how the BMP file is compressed.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum CompressionMethod {
+    /// The bitmap is in uncompressed RGB and doesn't use colour masks
     Rgb,
+    /// The bitmap is in uncompressed RGB, using colour masks
     Bitfields,
+    /// The bitmap is compressed using run-length encoding (RLE) compression,
+    /// with 8 bits per pixel. The compression uses a 2-byte format consisting
+    /// of a count byte followed by a byte containing a color index.
+    Rle8,
+    /// The bitmap is compressed using run-length encoding (RLE) compression,
+    /// with 4 bits per pixel. The compression uses a 2-byte format consisting
+    /// of a count byte followed by two word-length color indexes.
+    Rle4,
 }
 
 impl CompressionMethod {
     const fn new(value: u32) -> Result<Self, ParseError> {
         Ok(match value {
             0 => Self::Rgb,
+            1 => Self::Rle8,
+            2 => Self::Rle4,
             3 => Self::Bitfields,
             _ => return Err(ParseError::UnsupportedCompressionMethod(value)),
         })
