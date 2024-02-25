@@ -79,6 +79,10 @@ let pixel = bmp.pixel(Point::new(3, 2));
 assert_eq!(pixel, Some(Rgb888::WHITE));
 ```
 
+Note that you currently cannot access invidual pixels when working with RLE4
+or RLE8 compressed indexed bitmaps. With these formats the `pixel()`
+function will always return `None`.
+
 ### Accessing the raw image data
 
 For most applications the higher level access provided by [`Bmp`] is sufficient. But in case

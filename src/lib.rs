@@ -79,6 +79,10 @@
 //! # Ok::<(), core::convert::Infallible>(()) }
 //! ```
 //!
+//! Note that you currently cannot access invidual pixels when working with RLE4
+//! or RLE8 compressed indexed bitmaps. With these formats the `pixel()`
+//! function will always return `None`.
+//!
 //! ## Accessing the raw image data
 //!
 //! For most applications the higher level access provided by [`Bmp`] is sufficient. But in case
@@ -277,17 +281,17 @@ where
                 let fallback_color = C::from(Rgb888::BLACK);
                 if let Some(color_table) = self.raw_bmp.color_table() {
                     if header.compression_method == CompressionMethod::Rle4 {
-                        let point_colors = Rle4Pixels::new(&self.raw_bmp).map(|(point, index)| {
+                        let point_colors = Rle4Pixels::new(&self.raw_bmp).map(|raw_pixel| {
                             let color = color_table
-                                .get(index)
+                                .get(raw_pixel.color)
                                 .map(Into::into)
                                 .unwrap_or(fallback_color);
-                            Pixel(point, color)
+                            Pixel(raw_pixel.position, color)
                         });
                         // RLE4 produces pixels in bottom-up order, so we use `draw_iter` which draws pixels in arbitrary order.
                         target.draw_iter(point_colors)
                     } else {
-                        // RLE4 was the only supported compression type for indexed 4 bit graphics.
+                        // If we didn't detect a supported compression method, just intepret it as raw indexed nibbles.
                         let colors = RawColors::<RawU4>::new(&self.raw_bmp).map(|index| {
                             color_table
                                 .get(u32::from(index.into_inner()))
@@ -305,17 +309,17 @@ where
                 let fallback_color = C::from(Rgb888::BLACK);
                 if let Some(color_table) = self.raw_bmp.color_table() {
                     if header.compression_method == CompressionMethod::Rle8 {
-                        let point_colors = Rle8Pixels::new(&self.raw_bmp).map(|(point, index)| {
+                        let point_colors = Rle8Pixels::new(&self.raw_bmp).map(|raw_pixel| {
                             let color = color_table
-                                .get(index)
+                                .get(raw_pixel.color)
                                 .map(Into::into)
                                 .unwrap_or(fallback_color);
-                            Pixel(point, color)
+                            Pixel(raw_pixel.position, color)
                         });
                         // RLE8 produces pixels in bottom-up order, so we use `draw_iter` which draws pixels in arbitrary order.
                         target.draw_iter(point_colors)
                     } else {
-                        // RLE8 was the only supported compression type for indexed 8 bit graphics.
+                        // If we didn't detect a supported compression method, just intepret it as raw indexed bytes.
                         let colors = RawColors::<RawU8>::new(&self.raw_bmp).map(|index| {
                             color_table
                                 .get(u32::from(index.into_inner()))

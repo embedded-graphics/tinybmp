@@ -206,9 +206,9 @@ impl ChannelMasks {
 /// Describes how the BMP file is compressed.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
 pub enum CompressionMethod {
-    /// The bitmap is in uncompressed RGB and doesn't use colour masks
+    /// The bitmap is in uncompressed RGB and doesn't use color masks
     Rgb,
-    /// The bitmap is in uncompressed RGB, using colour masks
+    /// The bitmap is in uncompressed RGB, using color masks
     Bitfields,
     /// The bitmap is compressed using run-length encoding (RLE) compression,
     /// with 8 bits per pixel. The compression uses a 2-byte format consisting

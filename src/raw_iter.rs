@@ -69,16 +69,16 @@ enum DynamicRawColors<'a> {
     Bpp16(RawColors<'a, RawU16>),
     Bpp24(RawColors<'a, RawU24>),
     Bpp32(RawColors<'a, RawU32>),
-    Bpp4Rle4(Rle4Pixels<'a>),
-    Bpp8Rle8(Rle8Pixels<'a>),
+    Bpp4Rle(Rle4Pixels<'a>),
+    Bpp8Rle(Rle8Pixels<'a>),
 }
 
 impl<'a> DynamicRawColors<'a> {
     pub fn new(raw_bmp: &'a RawBmp<'a>) -> Self {
         let header = raw_bmp.header();
         match header.compression_method {
-            CompressionMethod::Rle4 => DynamicRawColors::Bpp4Rle4(Rle4Pixels::new(raw_bmp)),
-            CompressionMethod::Rle8 => DynamicRawColors::Bpp8Rle8(Rle8Pixels::new(raw_bmp)),
+            CompressionMethod::Rle4 => DynamicRawColors::Bpp4Rle(Rle4Pixels::new(raw_bmp)),
+            CompressionMethod::Rle8 => DynamicRawColors::Bpp8Rle(Rle8Pixels::new(raw_bmp)),
             CompressionMethod::Rgb | CompressionMethod::Bitfields => match header.bpp {
                 Bpp::Bits1 => DynamicRawColors::Bpp1(RawColors::new(raw_bmp)),
                 Bpp::Bits4 => DynamicRawColors::Bpp4(RawColors::new(raw_bmp)),
@@ -155,7 +155,7 @@ impl<'a> Rle8Pixels<'a> {
 }
 
 impl<'a> Iterator for Rle8Pixels<'a> {
-    type Item = (Point, u32);
+    type Item = RawPixel;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -177,14 +177,14 @@ impl<'a> Iterator for Rle8Pixels<'a> {
                             has_padding,
                         };
                     }
-                    let value = self.data.first()?;
+                    let value = *self.data.first()?;
                     if remaining == 0 && has_padding {
                         self.data = self.data.get(2..)?;
                     } else {
                         self.data = self.data.get(1..)?;
                     }
                     let this_pixel = self.move_position();
-                    return Some((this_pixel, *value as u32));
+                    return Some(RawPixel::new(this_pixel, u32::from(value)));
                 }
                 RleState::Running {
                     remaining,
@@ -201,7 +201,7 @@ impl<'a> Iterator for Rle8Pixels<'a> {
                         };
                     }
                     let this_pixel = self.move_position();
-                    return Some((this_pixel, value as u32));
+                    return Some(RawPixel::new(this_pixel, u32::from(value)));
                 }
                 RleState::Starting => {
                     let length = *self.data.get(0)?;
@@ -227,8 +227,8 @@ impl<'a> Iterator for Rle8Pixels<'a> {
                                     self.rle_state = RleState::EndOfBitmap;
                                 }
                                 2 => {
-                                    // Delta
-                                    panic!("Delta is unsupported");
+                                    // Delta encoding is unsupported.
+                                    return None;
                                 }
                                 _ => {
                                     // Absolute mode
@@ -299,7 +299,7 @@ impl<'a> Rle4Pixels<'a> {
 }
 
 impl<'a> Iterator for Rle4Pixels<'a> {
-    type Item = (Point, u32);
+    type Item = RawPixel;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -339,7 +339,7 @@ impl<'a> Iterator for Rle4Pixels<'a> {
                         };
                     }
 
-                    let value = self.data.first()?;
+                    let value = *self.data.first()?;
                     let nibble_value = if want_left { value >> 4 } else { value & 0x0F };
                     if !want_left || remaining == 0 {
                         self.data = self.data.get(1..)?;
@@ -349,7 +349,7 @@ impl<'a> Iterator for Rle4Pixels<'a> {
                         self.data = self.data.get(1..)?;
                     }
                     let this_pixel = self.move_position();
-                    return Some((this_pixel, nibble_value as u32));
+                    return Some(RawPixel::new(this_pixel, u32::from(nibble_value)));
                 }
                 RleState::Running {
                     remaining,
@@ -384,7 +384,7 @@ impl<'a> Iterator for Rle4Pixels<'a> {
                     }
 
                     let this_pixel = self.move_position();
-                    return Some((this_pixel, nibble_value as u32));
+                    return Some(RawPixel::new(this_pixel, u32::from(nibble_value)));
                 }
                 RleState::Starting => {
                     let length = *self.data.get(0)?;
@@ -410,8 +410,8 @@ impl<'a> Iterator for Rle4Pixels<'a> {
                                     self.rle_state = RleState::EndOfBitmap;
                                 }
                                 2 => {
-                                    // Delta
-                                    panic!("Delta is unsupported");
+                                    // Delta encoding is unsupported.
+                                    return None;
                                 }
                                 _ => {
                                     // Absolute mode
@@ -468,13 +468,11 @@ impl Iterator for RawPixels<'_> {
             DynamicRawColors::Bpp16(colors) => colors.next().map(|r| u32::from(r.into_inner())),
             DynamicRawColors::Bpp24(colors) => colors.next().map(|r| r.into_inner()),
             DynamicRawColors::Bpp32(colors) => colors.next().map(|r| r.into_inner()),
-            DynamicRawColors::Bpp4Rle4(state) => {
-                let (position, color) = state.next()?;
-                return Some(RawPixel { position, color });
+            DynamicRawColors::Bpp4Rle(state) => {
+                return state.next();
             }
-            DynamicRawColors::Bpp8Rle8(state) => {
-                let (position, color) = state.next()?;
-                return Some(RawPixel { position, color });
+            DynamicRawColors::Bpp8Rle(state) => {
+                return state.next();
             }
         }?;
 
