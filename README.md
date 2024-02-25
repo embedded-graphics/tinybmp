@@ -92,7 +92,7 @@ Similar to [`Bmp::pixel`], [`RawBmp::pixel`] can be used to get raw pixel color 
 
 ```rust
 use embedded_graphics::prelude::*;
-use tinybmp::{RawBmp, Bpp, Header, RawPixel, RowOrder};
+use tinybmp::{RawBmp, Bpp, Header, RawPixel, RowOrder, CompressionMethod};
 
 let bmp = RawBmp::from_slice(include_bytes!("../tests/chessboard-8px-24bit.bmp"))
     .expect("Failed to parse BMP image");
@@ -108,6 +108,7 @@ assert_eq!(
         image_data_len: 192,
         channel_masks: None,
         row_order: RowOrder::BottomUp,
+        compression_method: CompressionMethod::Rgb,
     }
 );
 
