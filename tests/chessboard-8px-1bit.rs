@@ -2,7 +2,7 @@ use embedded_graphics::{
     pixelcolor::{BinaryColor, Rgb888},
     prelude::*,
 };
-use tinybmp::{Bmp, Bpp, Header, RawBmp, RowOrder};
+use tinybmp::{Bmp, Bpp, CompressionMethod, Header, RawBmp, RowOrder};
 
 #[test]
 fn chessboard_8px_1bit() {
@@ -19,6 +19,7 @@ fn chessboard_8px_1bit() {
             image_data_len: 32,
             channel_masks: None,
             row_order: RowOrder::BottomUp,
+            compression_method: CompressionMethod::Rgb,
         }
     );
 

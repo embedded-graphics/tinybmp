@@ -79,6 +79,10 @@ let pixel = bmp.pixel(Point::new(3, 2));
 assert_eq!(pixel, Some(Rgb888::WHITE));
 ```
 
+Note that you currently cannot access invidual pixels when working with RLE4
+or RLE8 compressed indexed bitmaps. With these formats the `pixel()`
+function will always return `None`.
+
 ### Accessing the raw image data
 
 For most applications the higher level access provided by [`Bmp`] is sufficient. But in case
@@ -92,7 +96,7 @@ Similar to [`Bmp::pixel`], [`RawBmp::pixel`] can be used to get raw pixel color 
 
 ```rust
 use embedded_graphics::prelude::*;
-use tinybmp::{RawBmp, Bpp, Header, RawPixel, RowOrder};
+use tinybmp::{RawBmp, Bpp, Header, RawPixel, RowOrder, CompressionMethod};
 
 let bmp = RawBmp::from_slice(include_bytes!("../tests/chessboard-8px-24bit.bmp"))
     .expect("Failed to parse BMP image");
@@ -108,6 +112,7 @@ assert_eq!(
         image_data_len: 192,
         channel_masks: None,
         row_order: RowOrder::BottomUp,
+        compression_method: CompressionMethod::Rgb,
     }
 );
 
@@ -126,7 +131,7 @@ assert_eq!(pixel, Some(0xFFFFFFu32));
 
 ## Minimum supported Rust version
 
-The minimum supported Rust version for tinybmp is `1.61` or greater. Ensure you have the correct
+The minimum supported Rust version for tinybmp is `1.71` or greater. Ensure you have the correct
 version of Rust installed, preferably through <https://rustup.rs>.
 
 [`Bmp`]: https://docs.rs/tinybmp/latest/tinybmp/struct.Bmp.html

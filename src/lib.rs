@@ -79,6 +79,10 @@
 //! # Ok::<(), core::convert::Infallible>(()) }
 //! ```
 //!
+//! Note that you currently cannot access invidual pixels when working with RLE4
+//! or RLE8 compressed indexed bitmaps. With these formats the `pixel()`
+//! function will always return `None`.
+//!
 //! ## Accessing the raw image data
 //!
 //! For most applications the higher level access provided by [`Bmp`] is sufficient. But in case
@@ -92,7 +96,7 @@
 //!
 //! ```
 //! use embedded_graphics::prelude::*;
-//! use tinybmp::{RawBmp, Bpp, Header, RawPixel, RowOrder};
+//! use tinybmp::{RawBmp, Bpp, Header, RawPixel, RowOrder, CompressionMethod};
 //!
 //! let bmp = RawBmp::from_slice(include_bytes!("../tests/chessboard-8px-24bit.bmp"))
 //!     .expect("Failed to parse BMP image");
@@ -108,6 +112,7 @@
 //!         image_data_len: 192,
 //!         channel_masks: None,
 //!         row_order: RowOrder::BottomUp,
+//!         compression_method: CompressionMethod::Rgb,
 //!     }
 //! );
 //!
@@ -128,7 +133,7 @@
 //!
 //! # Minimum supported Rust version
 //!
-//! The minimum supported Rust version for tinybmp is `1.61` or greater. Ensure you have the correct
+//! The minimum supported Rust version for tinybmp is `1.71` or greater. Ensure you have the correct
 //! version of Rust installed, preferably through <https://rustup.rs>.
 //!
 //! <!-- README-LINKS
@@ -188,9 +193,10 @@ mod raw_bmp;
 mod raw_iter;
 
 use raw_bmp::ColorType;
-use raw_iter::RawColors;
+use raw_iter::{RawColors, Rle4Pixels, Rle8Pixels};
 
 pub use color_table::ColorTable;
+pub use header::CompressionMethod;
 pub use header::{Bpp, ChannelMasks, Header, RowOrder};
 pub use iter::Pixels;
 pub use raw_bmp::RawBmp;
@@ -249,6 +255,7 @@ where
         D: DrawTarget<Color = C>,
     {
         let area = self.bounding_box();
+        let slice_size = Size::new(area.size.width, 1);
 
         match self.raw_bmp.color_type {
             ColorType::Index1 => {
@@ -271,33 +278,69 @@ where
                 }
             }
             ColorType::Index4 => {
+                let header = self.raw_bmp.header();
+                let fallback_color = C::from(Rgb888::BLACK);
                 if let Some(color_table) = self.raw_bmp.color_table() {
-                    let fallback_color = C::from(Rgb888::BLACK);
-
-                    let colors = RawColors::<RawU4>::new(&self.raw_bmp).map(|index| {
-                        color_table
-                            .get(u32::from(index.into_inner()))
-                            .map(Into::into)
-                            .unwrap_or(fallback_color)
-                    });
-
-                    target.fill_contiguous(&area, colors)
+                    if header.compression_method == CompressionMethod::Rle4 {
+                        let mut colors = Rle4Pixels::new(&self.raw_bmp).map(|raw_pixel| {
+                            color_table
+                                .get(raw_pixel.color)
+                                .map(Into::into)
+                                .unwrap_or(fallback_color)
+                        });
+                        // RLE produces pixels in bottom-up order, so we draw them line by line rather than the entire bitmap at once.
+                        for y in (0..area.size.height).rev() {
+                            let row = Rectangle::new(Point::new(0, y as i32), slice_size);
+                            target.fill_contiguous(
+                                &row,
+                                colors.by_ref().take(area.size.width as usize),
+                            )?;
+                        }
+                        Ok(())
+                    } else {
+                        // If we didn't detect a supported compression method, just intepret it as raw indexed nibbles.
+                        let colors = RawColors::<RawU4>::new(&self.raw_bmp).map(|index| {
+                            color_table
+                                .get(u32::from(index.into_inner()))
+                                .map(Into::into)
+                                .unwrap_or(fallback_color)
+                        });
+                        target.fill_contiguous(&area, colors)
+                    }
                 } else {
                     Ok(())
                 }
             }
             ColorType::Index8 => {
+                let header = self.raw_bmp.header();
+                let fallback_color = C::from(Rgb888::BLACK);
                 if let Some(color_table) = self.raw_bmp.color_table() {
-                    let fallback_color = C::from(Rgb888::BLACK);
-
-                    let colors = RawColors::<RawU8>::new(&self.raw_bmp).map(|index| {
-                        color_table
-                            .get(u32::from(index.into_inner()))
-                            .map(Into::into)
-                            .unwrap_or(fallback_color)
-                    });
-
-                    target.fill_contiguous(&area, colors)
+                    if header.compression_method == CompressionMethod::Rle8 {
+                        let mut colors = Rle8Pixels::new(&self.raw_bmp).map(|raw_pixel| {
+                            color_table
+                                .get(raw_pixel.color)
+                                .map(Into::into)
+                                .unwrap_or(fallback_color)
+                        });
+                        // RLE produces pixels in bottom-up order, so we draw them line by line rather than the entire bitmap at once.
+                        for y in (0..area.size.height).rev() {
+                            let row = Rectangle::new(Point::new(0, y as i32), slice_size);
+                            target.fill_contiguous(
+                                &row,
+                                colors.by_ref().take(area.size.width as usize),
+                            )?;
+                        }
+                        Ok(())
+                    } else {
+                        // If we didn't detect a supported compression method, just intepret it as raw indexed bytes.
+                        let colors = RawColors::<RawU8>::new(&self.raw_bmp).map(|index| {
+                            color_table
+                                .get(u32::from(index.into_inner()))
+                                .map(Into::into)
+                                .unwrap_or(fallback_color)
+                        });
+                        target.fill_contiguous(&area, colors)
+                    }
                 } else {
                     Ok(())
                 }

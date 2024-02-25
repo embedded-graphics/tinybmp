@@ -44,21 +44,14 @@ impl<'a> RawBmp<'a> {
 
         let color_type = ColorType::from_header(&header)?;
 
-        let height = header
-            .image_size
-            .height
-            .try_into()
-            .map_err(|_| ParseError::InvalidImageDimensions)?;
-
-        let data_length = header
-            .bytes_per_row()
-            .checked_mul(height)
-            .ok_or(ParseError::InvalidImageDimensions)?;
+        // Believe what the bitmap tells us rather than multiplying width by
+        // height by bits-per-pixel, because the image data might be compressed.
+        let compressed_data_length = header.image_data_len as usize;
 
         // The `get` is split into two calls to prevent an possible integer overflow.
         let image_data = &bytes
             .get(header.image_data_start..)
-            .and_then(|bytes| bytes.get(..data_length))
+            .and_then(|bytes| bytes.get(..compressed_data_length))
             .ok_or(ParseError::UnexpectedEndOfFile)?;
 
         Ok(Self {
@@ -97,7 +90,19 @@ impl<'a> RawBmp<'a> {
     ///
     /// Returns `None` if `p` is outside the image bounding box. Note that this function doesn't
     /// apply a color map, if the image contains one.
+    ///
+    /// This routine always returns `None` if the bitmap is RLE compressed, as RLE compressed
+    /// bitmaps don't easily allow direct access to any given pixel.
     pub fn pixel(&self, p: Point) -> Option<u32> {
+        if matches!(
+            self.header.compression_method,
+            crate::header::CompressionMethod::Rle8 | crate::header::CompressionMethod::Rle4
+        ) {
+            // TODO implement direct access by counting `0x00, 0x00` pairs,
+            // which uniquely mark the end of a line.
+            return None;
+        }
+
         let width = self.header.image_size.width as i32;
         let height = self.header.image_size.height as i32;
 
