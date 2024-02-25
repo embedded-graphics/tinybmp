@@ -189,7 +189,7 @@ mod raw_bmp;
 mod raw_iter;
 
 use raw_bmp::ColorType;
-use raw_iter::{RawColors, Rle8Pixels};
+use raw_iter::{RawColors, Rle4Pixels, Rle8Pixels};
 
 pub use color_table::ColorTable;
 pub use header::CompressionMethod;
@@ -273,17 +273,29 @@ where
                 }
             }
             ColorType::Index4 => {
+                let header = self.raw_bmp.header();
+                let fallback_color = C::from(Rgb888::BLACK);
                 if let Some(color_table) = self.raw_bmp.color_table() {
-                    let fallback_color = C::from(Rgb888::BLACK);
-
-                    let colors = RawColors::<RawU4>::new(&self.raw_bmp).map(|index| {
-                        color_table
-                            .get(u32::from(index.into_inner()))
-                            .map(Into::into)
-                            .unwrap_or(fallback_color)
-                    });
-
-                    target.fill_contiguous(&area, colors)
+                    if header.compression_method == CompressionMethod::Rle4 {
+                        let point_colors = Rle4Pixels::new(&self.raw_bmp).map(|(point, index)| {
+                            let color = color_table
+                                .get(index)
+                                .map(Into::into)
+                                .unwrap_or(fallback_color);
+                            Pixel(point, color)
+                        });
+                        // RLE4 produces pixels in bottom-up order, so we use `draw_iter` which draws pixels in arbitrary order.
+                        target.draw_iter(point_colors)
+                    } else {
+                        // RLE4 was the only supported compression type for indexed 4 bit graphics.
+                        let colors = RawColors::<RawU4>::new(&self.raw_bmp).map(|index| {
+                            color_table
+                                .get(u32::from(index.into_inner()))
+                                .map(Into::into)
+                                .unwrap_or(fallback_color)
+                        });
+                        target.fill_contiguous(&area, colors)
+                    }
                 } else {
                     Ok(())
                 }

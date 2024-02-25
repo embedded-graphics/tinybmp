@@ -69,6 +69,7 @@ enum DynamicRawColors<'a> {
     Bpp16(RawColors<'a, RawU16>),
     Bpp24(RawColors<'a, RawU24>),
     Bpp32(RawColors<'a, RawU32>),
+    Bpp4Rle4(Rle4Pixels<'a>),
     Bpp8Rle8(Rle8Pixels<'a>),
 }
 
@@ -76,7 +77,7 @@ impl<'a> DynamicRawColors<'a> {
     pub fn new(raw_bmp: &'a RawBmp<'a>) -> Self {
         let header = raw_bmp.header();
         match header.compression_method {
-            CompressionMethod::Rle4 => todo!(),
+            CompressionMethod::Rle4 => DynamicRawColors::Bpp4Rle4(Rle4Pixels::new(raw_bmp)),
             CompressionMethod::Rle8 => DynamicRawColors::Bpp8Rle8(Rle8Pixels::new(raw_bmp)),
             CompressionMethod::Rgb | CompressionMethod::Bitfields => match header.bpp {
                 Bpp::Bits1 => DynamicRawColors::Bpp1(RawColors::new(raw_bmp)),
@@ -92,13 +93,21 @@ impl<'a> DynamicRawColors<'a> {
 
 /// The state for our RLE* decoder
 #[derive(Debug)]
-enum Rle8State {
+enum RleState {
     /// Need to read two bytes
     Starting,
     /// Producing a sequence of identical values
-    Running { remaining: u8, value: u8 },
+    Running {
+        remaining: u8,
+        value: u8,
+        is_odd: bool,
+    },
     /// Producing a sequence of unique values
-    Absolute { remaining: u8, is_odd: bool },
+    Absolute {
+        remaining: u8,
+        is_odd: bool,
+        has_padding: bool,
+    },
     /// Ran out of pixels
     EndOfBitmap,
 }
@@ -111,7 +120,7 @@ pub struct Rle8Pixels<'a> {
     /// Our source data
     data: &'a [u8],
     /// Our state
-    rle_state: Rle8State,
+    rle_state: RleState,
     /// The width of a line in pixels
     width: u32,
     /// The location of the next pixel
@@ -124,7 +133,7 @@ impl<'a> Rle8Pixels<'a> {
         let header = raw_bmp.header();
         Rle8Pixels {
             data: raw_bmp.image_data(),
-            rle_state: Rle8State::Starting,
+            rle_state: RleState::Starting,
             width: header.image_size.width,
             // RLE encoded bitmaps are upside down
             next_pixel: Point::new(0, (header.image_size.height - 1) as i32),
@@ -151,20 +160,25 @@ impl<'a> Iterator for Rle8Pixels<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             match self.rle_state {
-                Rle8State::EndOfBitmap => {
+                RleState::EndOfBitmap => {
                     return None;
                 }
-                Rle8State::Absolute { remaining, is_odd } => {
+                RleState::Absolute {
+                    remaining,
+                    is_odd,
+                    has_padding,
+                } => {
                     if remaining == 0 {
-                        self.rle_state = Rle8State::Starting;
+                        self.rle_state = RleState::Starting;
                     } else {
-                        self.rle_state = Rle8State::Absolute {
+                        self.rle_state = RleState::Absolute {
                             remaining: remaining.saturating_sub(1),
                             is_odd,
+                            has_padding,
                         };
                     }
                     let value = self.data.first()?;
-                    if remaining == 0 && is_odd {
+                    if remaining == 0 && has_padding {
                         self.data = self.data.get(2..)?;
                     } else {
                         self.data = self.data.get(1..)?;
@@ -172,19 +186,24 @@ impl<'a> Iterator for Rle8Pixels<'a> {
                     let this_pixel = self.move_position();
                     return Some((this_pixel, *value as u32));
                 }
-                Rle8State::Running { remaining, value } => {
+                RleState::Running {
+                    remaining,
+                    value,
+                    is_odd,
+                } => {
                     if remaining == 0 {
-                        self.rle_state = Rle8State::Starting;
+                        self.rle_state = RleState::Starting;
                     } else {
-                        self.rle_state = Rle8State::Running {
+                        self.rle_state = RleState::Running {
                             remaining: remaining.saturating_sub(1),
                             value,
+                            is_odd,
                         };
                     }
                     let this_pixel = self.move_position();
                     return Some((this_pixel, value as u32));
                 }
-                Rle8State::Starting => {
+                RleState::Starting => {
                     let length = *self.data.get(0)?;
                     let param = *self.data.get(1)?;
                     self.data = &self.data.get(2..)?;
@@ -205,7 +224,7 @@ impl<'a> Iterator for Rle8Pixels<'a> {
                                 }
                                 1 => {
                                     // End of bitmap
-                                    self.rle_state = Rle8State::EndOfBitmap;
+                                    self.rle_state = RleState::EndOfBitmap;
                                 }
                                 2 => {
                                     // Delta
@@ -213,18 +232,204 @@ impl<'a> Iterator for Rle8Pixels<'a> {
                                 }
                                 _ => {
                                     // Absolute mode
-                                    self.rle_state = Rle8State::Absolute {
+                                    self.rle_state = RleState::Absolute {
                                         remaining: param.saturating_sub(1),
                                         is_odd: (param % 2) != 0,
+                                        // Odd lengths in RLE8 require 1 byte padding
+                                        has_padding: (param % 2) != 0,
                                     };
                                 }
                             }
                         }
                         _ => {
                             // An encoded run
-                            self.rle_state = Rle8State::Running {
+                            self.rle_state = RleState::Running {
                                 remaining: length.saturating_sub(1),
                                 value: param,
+                                is_odd: (length % 2) != 0,
+                            };
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Iterator over individual BMP RLE4 encoded pixels.
+///
+/// Each pixel is returned as a `u32` regardless of the bit depth of the source image.
+#[derive(Debug)]
+pub struct Rle4Pixels<'a> {
+    /// Our source data
+    data: &'a [u8],
+    /// Our state
+    rle_state: RleState,
+    /// The width of a line in pixels
+    width: u32,
+    /// The location of the next pixel
+    next_pixel: Point,
+}
+
+impl<'a> Rle4Pixels<'a> {
+    /// Create a new RLE pixel iterator.
+    pub(crate) fn new(raw_bmp: &RawBmp<'a>) -> Rle4Pixels<'a> {
+        let header = raw_bmp.header();
+        Rle4Pixels {
+            data: raw_bmp.image_data(),
+            rle_state: RleState::Starting,
+            width: header.image_size.width,
+            // RLE encoded bitmaps are upside down
+            next_pixel: Point::new(0, (header.image_size.height - 1) as i32),
+        }
+    }
+
+    /// Bump the cursor to the next position in the bitmap.
+    ///
+    /// Note that RLE bitmaps are upside down.
+    fn move_position(&mut self) -> Point {
+        let old_position = self.next_pixel;
+        self.next_pixel.x += 1;
+        if self.next_pixel.x == self.width as i32 {
+            self.next_pixel.x = 0;
+            self.next_pixel.y = self.next_pixel.y.saturating_sub(1);
+        }
+        old_position
+    }
+}
+
+impl<'a> Iterator for Rle4Pixels<'a> {
+    type Item = (Point, u32);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match self.rle_state {
+                RleState::EndOfBitmap => {
+                    return None;
+                }
+                RleState::Absolute {
+                    remaining,
+                    is_odd,
+                    has_padding,
+                } => {
+                    // Here `remaining` is a count of nibbles, not bytes
+
+                    // [00, 04, 45, 67] => 4 5 6 7
+                    //                     ^ ^ ^ ^
+                    //                     | | | +-- remaining is 0, is_odd is 0, we want [1]right
+                    //                     | | +-- remaining is 1, is_odd is 0, we want [1]left
+                    //                     | +-- remaining is 2, is_odd is 0, we want [0]right
+                    //                     +-- remaining is 3, is_odd is 0, we want [0]left
+                    // [00, 03, 45, 60] => 4 5 6
+                    //                     ^ ^ ^
+                    //                     | | +-- remaining is 0, is_odd is 1, we want [1]left
+                    //                     | +-- remaining is 1, is_odd is 1, we want [0]right
+                    //                     +-- remaining is 2, is_odd is 1, we want [0]left
+
+                    let remaining_is_odd = (remaining % 2) != 0;
+                    let want_left = remaining_is_odd != is_odd;
+
+                    if remaining == 0 {
+                        self.rle_state = RleState::Starting;
+                    } else {
+                        self.rle_state = RleState::Absolute {
+                            remaining: remaining.saturating_sub(1),
+                            is_odd,
+                            has_padding,
+                        };
+                    }
+
+                    let value = self.data.first()?;
+                    let nibble_value = if want_left { value >> 4 } else { value & 0x0F };
+                    if !want_left || remaining == 0 {
+                        self.data = self.data.get(1..)?;
+                    }
+                    if remaining == 0 && has_padding {
+                        // remove the padding byte too
+                        self.data = self.data.get(1..)?;
+                    }
+                    let this_pixel = self.move_position();
+                    return Some((this_pixel, nibble_value as u32));
+                }
+                RleState::Running {
+                    remaining,
+                    value,
+                    is_odd,
+                } => {
+                    // [03, 04] => 0 4 0
+                    //             ^ ^ ^
+                    //             | | +-- remaining is 0, is_odd is 1, we want left
+                    //             | +-- remaining is 1, is_odd is 1, we want right
+                    //             +-- remaining is 2, is_odd is 1, we want left
+                    // [04, 04] => 0 4 0 4
+                    //             ^ ^ ^ ^
+                    //             | | | +-- remaining is 0, is_odd is 0, we want right
+                    //             | | +-- remaining is 1, is_odd is 0, we want left
+                    //             | +-- remaining is 2, is_odd is 0, we want right
+                    //             +-- remaining is 3, is_odd is 0, we want left
+
+                    let remaining_is_odd = (remaining % 2) != 0;
+                    let want_left = remaining_is_odd != is_odd;
+
+                    let nibble_value = if want_left { value >> 4 } else { value & 0x0F };
+
+                    if remaining == 0 {
+                        self.rle_state = RleState::Starting;
+                    } else {
+                        self.rle_state = RleState::Running {
+                            remaining: remaining.saturating_sub(1),
+                            value,
+                            is_odd,
+                        };
+                    }
+
+                    let this_pixel = self.move_position();
+                    return Some((this_pixel, nibble_value as u32));
+                }
+                RleState::Starting => {
+                    let length = *self.data.get(0)?;
+                    let param = *self.data.get(1)?;
+                    self.data = &self.data.get(2..)?;
+                    match length {
+                        0 => {
+                            // The first byte of the pair can be set to zero to
+                            // indicate an escape character that denotes the end of
+                            // a line, the end of a bitmap, or a delta, depending on
+                            // the value of the second byte. The interpretation of
+                            // the escape depends on the value of the second byte of
+                            // the pair, which can be one of the following values.
+                            match param {
+                                0 => {
+                                    // End of line
+                                    if self.next_pixel.x != 0 {
+                                        return None;
+                                    }
+                                }
+                                1 => {
+                                    // End of bitmap
+                                    self.rle_state = RleState::EndOfBitmap;
+                                }
+                                2 => {
+                                    // Delta
+                                    panic!("Delta is unsupported");
+                                }
+                                _ => {
+                                    // Absolute mode
+                                    self.rle_state = RleState::Absolute {
+                                        remaining: param.saturating_sub(1),
+                                        is_odd: (param % 2) != 0,
+                                        // padding if the number of *bytes* is odd
+                                        has_padding: ((param >> 1) % 2) != 0,
+                                    };
+                                }
+                            }
+                        }
+                        _ => {
+                            // An encoded run
+                            self.rle_state = RleState::Running {
+                                remaining: length.saturating_sub(1),
+                                value: param,
+                                is_odd: (length % 2) != 0,
                             };
                         }
                     }
@@ -261,8 +466,12 @@ impl Iterator for RawPixels<'_> {
             DynamicRawColors::Bpp4(colors) => colors.next().map(|r| u32::from(r.into_inner())),
             DynamicRawColors::Bpp8(colors) => colors.next().map(|r| u32::from(r.into_inner())),
             DynamicRawColors::Bpp16(colors) => colors.next().map(|r| u32::from(r.into_inner())),
-            DynamicRawColors::Bpp24(colors) => colors.next().map(|r| u32::from(r.into_inner())),
-            DynamicRawColors::Bpp32(colors) => colors.next().map(|r| u32::from(r.into_inner())),
+            DynamicRawColors::Bpp24(colors) => colors.next().map(|r| r.into_inner()),
+            DynamicRawColors::Bpp32(colors) => colors.next().map(|r| r.into_inner()),
+            DynamicRawColors::Bpp4Rle4(state) => {
+                let (position, color) = state.next()?;
+                return Some(RawPixel { position, color });
+            }
             DynamicRawColors::Bpp8Rle8(state) => {
                 let (position, color) = state.next()?;
                 return Some(RawPixel { position, color });

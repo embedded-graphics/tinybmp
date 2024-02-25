@@ -148,6 +148,14 @@ fn logo_indexed_4bpp() {
 }
 
 #[test]
+fn logo_indexed_4bpp_rle4() {
+    let raw = draw_raw::<Bgr888>(include_bytes!("logo-indexed-4bpp.raw"));
+    let bmp = draw_bmp::<Bgr888>(include_bytes!("logo-indexed-4bpp-rle4.bmp"));
+
+    bmp.assert_eq(&raw);
+}
+
+#[test]
 fn logo_indexed_4bpp_pixel_getter() {
     let raw = draw_raw::<Bgr888>(include_bytes!("logo-indexed-4bpp.raw"));
     let bmp = draw_bmp_pixel_getter::<Bgr888>(include_bytes!("logo-indexed-4bpp.bmp"));
