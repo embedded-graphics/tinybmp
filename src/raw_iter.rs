@@ -120,7 +120,7 @@ pub struct Rle8Pixels<'a> {
 
 impl<'a> Rle8Pixels<'a> {
     /// Create a new RLE pixel iterator.
-    fn new(raw_bmp: &RawBmp<'a>) -> Rle8Pixels<'a> {
+    pub(crate) fn new(raw_bmp: &RawBmp<'a>) -> Rle8Pixels<'a> {
         let header = raw_bmp.header();
         Rle8Pixels {
             data: raw_bmp.image_data(),

@@ -189,7 +189,7 @@ mod raw_bmp;
 mod raw_iter;
 
 use raw_bmp::ColorType;
-use raw_iter::RawColors;
+use raw_iter::{RawColors, Rle8Pixels};
 
 pub use color_table::ColorTable;
 pub use header::CompressionMethod;
@@ -289,17 +289,29 @@ where
                 }
             }
             ColorType::Index8 => {
+                let header = self.raw_bmp.header();
+                let fallback_color = C::from(Rgb888::BLACK);
                 if let Some(color_table) = self.raw_bmp.color_table() {
-                    let fallback_color = C::from(Rgb888::BLACK);
-
-                    let colors = RawColors::<RawU8>::new(&self.raw_bmp).map(|index| {
-                        color_table
-                            .get(u32::from(index.into_inner()))
-                            .map(Into::into)
-                            .unwrap_or(fallback_color)
-                    });
-
-                    target.fill_contiguous(&area, colors)
+                    if header.compression_method == CompressionMethod::Rle8 {
+                        let point_colors = Rle8Pixels::new(&self.raw_bmp).map(|(point, index)| {
+                            let color = color_table
+                                .get(index)
+                                .map(Into::into)
+                                .unwrap_or(fallback_color);
+                            Pixel(point, color)
+                        });
+                        // RLE8 produces pixels in bottom-up order, so we use `draw_iter` which draws pixels in arbitrary order.
+                        target.draw_iter(point_colors)
+                    } else {
+                        // RLE8 was the only supported compression type for indexed 8 bit graphics.
+                        let colors = RawColors::<RawU8>::new(&self.raw_bmp).map(|index| {
+                            color_table
+                                .get(u32::from(index.into_inner()))
+                                .map(Into::into)
+                                .unwrap_or(fallback_color)
+                        });
+                        target.fill_contiguous(&area, colors)
+                    }
                 } else {
                     Ok(())
                 }

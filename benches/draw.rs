@@ -107,6 +107,16 @@ fn parser_benchmarks(c: &mut Criterion) {
         })
     });
 
+    c.bench_function("draw indexed 8BPP RLE8", |b| {
+        let mut fb = Framebuffer::<Rgb888>::new();
+        b.iter(|| {
+            let bmp =
+                Bmp::<Rgb888>::from_slice(include_bytes!("../tests/logo-indexed-8bpp-rle8.bmp"))
+                    .unwrap();
+            Image::new(&bmp, Point::zero()).draw(&mut fb).unwrap();
+        })
+    });
+
     c.bench_function("draw dynamic RGB565 to RGB888", |b| {
         let mut fb = Framebuffer::<Rgb888>::new();
         b.iter(|| {

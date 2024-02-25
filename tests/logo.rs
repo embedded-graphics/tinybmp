@@ -172,6 +172,14 @@ fn logo_indexed_8bpp_pixel_getter() {
 }
 
 #[test]
+fn logo_indexed_8bpp_rle8() {
+    let raw = draw_raw::<Bgr888>(include_bytes!("logo-indexed-8bpp.raw"));
+    let bmp = draw_bmp::<Bgr888>(include_bytes!("logo-indexed-8bpp-rle8.bmp"));
+
+    bmp.assert_eq(&raw);
+}
+
+#[test]
 fn logo_rgb555() {
     let raw = draw_raw::<Rgb555>(include_bytes!("logo-rgb555.raw"));
     let bmp = draw_bmp::<Rgb555>(include_bytes!("logo-rgb555.bmp"));
