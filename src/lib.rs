@@ -255,6 +255,7 @@ where
         D: DrawTarget<Color = C>,
     {
         let area = self.bounding_box();
+        let slice_size = Size::new(area.size.width, 1);
 
         match self.raw_bmp.color_type {
             ColorType::Index1 => {
@@ -281,15 +282,21 @@ where
                 let fallback_color = C::from(Rgb888::BLACK);
                 if let Some(color_table) = self.raw_bmp.color_table() {
                     if header.compression_method == CompressionMethod::Rle4 {
-                        let point_colors = Rle4Pixels::new(&self.raw_bmp).map(|raw_pixel| {
-                            let color = color_table
+                        let mut colors = Rle4Pixels::new(&self.raw_bmp).map(|raw_pixel| {
+                            color_table
                                 .get(raw_pixel.color)
                                 .map(Into::into)
-                                .unwrap_or(fallback_color);
-                            Pixel(raw_pixel.position, color)
+                                .unwrap_or(fallback_color)
                         });
-                        // RLE4 produces pixels in bottom-up order, so we use `draw_iter` which draws pixels in arbitrary order.
-                        target.draw_iter(point_colors)
+                        // RLE produces pixels in bottom-up order, so we draw them line by line rather than the entire bitmap at once.
+                        for y in (0..area.size.height).rev() {
+                            let row = Rectangle::new(Point::new(0, y as i32), slice_size);
+                            target.fill_contiguous(
+                                &row,
+                                colors.by_ref().take(area.size.width as usize),
+                            )?;
+                        }
+                        Ok(())
                     } else {
                         // If we didn't detect a supported compression method, just intepret it as raw indexed nibbles.
                         let colors = RawColors::<RawU4>::new(&self.raw_bmp).map(|index| {
@@ -309,15 +316,21 @@ where
                 let fallback_color = C::from(Rgb888::BLACK);
                 if let Some(color_table) = self.raw_bmp.color_table() {
                     if header.compression_method == CompressionMethod::Rle8 {
-                        let point_colors = Rle8Pixels::new(&self.raw_bmp).map(|raw_pixel| {
-                            let color = color_table
+                        let mut colors = Rle8Pixels::new(&self.raw_bmp).map(|raw_pixel| {
+                            color_table
                                 .get(raw_pixel.color)
                                 .map(Into::into)
-                                .unwrap_or(fallback_color);
-                            Pixel(raw_pixel.position, color)
+                                .unwrap_or(fallback_color)
                         });
-                        // RLE8 produces pixels in bottom-up order, so we use `draw_iter` which draws pixels in arbitrary order.
-                        target.draw_iter(point_colors)
+                        // RLE produces pixels in bottom-up order, so we draw them line by line rather than the entire bitmap at once.
+                        for y in (0..area.size.height).rev() {
+                            let row = Rectangle::new(Point::new(0, y as i32), slice_size);
+                            target.fill_contiguous(
+                                &row,
+                                colors.by_ref().take(area.size.width as usize),
+                            )?;
+                        }
+                        Ok(())
                     } else {
                         // If we didn't detect a supported compression method, just intepret it as raw indexed bytes.
                         let colors = RawColors::<RawU8>::new(&self.raw_bmp).map(|index| {
