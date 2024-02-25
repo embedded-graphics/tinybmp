@@ -10,6 +10,10 @@
 
 - [#41](https://github.com/embedded-graphics/tinybmp/pull/41) Added support for RLE8 and RLE4 encoded bitmaps
 
+### Changed
+
+- **(breaking)** [#41](https://github.com/embedded-graphics/tinybmp/pull/41) Use 1.71 as the MSRV.
+
 ## [0.5.0] - 2023-05-17
 
 ### Changed
