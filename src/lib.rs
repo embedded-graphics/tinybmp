@@ -362,6 +362,11 @@ where
                 RawColors::<RawU32>::new(&self.raw_bmp)
                     .map(|raw| Rgb888::from(RawU24::new(raw.into_inner())).into()),
             ),
+            ColorType::Argb8888 => target.fill_contiguous(
+                &area,
+                RawColors::<RawU32>::new(&self.raw_bmp)
+                    .map(|raw| Rgb888::from(RawU24::new(raw.into_inner() >> 8)).into()),
+            ),
         }
     }
 
@@ -421,6 +426,10 @@ where
                 .raw_bmp
                 .pixel(p)
                 .map(|raw| Rgb888::from(RawU24::from_u32(raw)).into()),
+            ColorType::Argb8888 => self
+                .raw_bmp
+                .pixel(p)
+                .map(|raw| Rgb888::from(RawU24::from_u32(raw >> 8)).into()),
         }
     }
 }

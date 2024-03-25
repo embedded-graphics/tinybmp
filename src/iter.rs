@@ -56,6 +56,7 @@ where
             ColorType::Rgb555 => Rgb555::from(RawU16::from_u32(color)).into(),
             ColorType::Rgb565 => Rgb565::from(RawU16::from_u32(color)).into(),
             ColorType::Rgb888 | ColorType::Xrgb8888 => Rgb888::from(RawU24::from_u32(color)).into(),
+            ColorType::Argb8888 => Rgb888::from(RawU24::from_u32(color >> 8)).into(),
         };
 
         Some(Pixel(position, color))
