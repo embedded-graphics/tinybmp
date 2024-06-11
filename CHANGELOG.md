@@ -6,6 +6,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [0.6.0] - 2024-06-11
+
 ### Added
 
 - [#41](https://github.com/embedded-graphics/tinybmp/pull/41) Added support for RLE8 and RLE4 encoded bitmaps
@@ -169,7 +171,8 @@
 - Release `tinybmp` crate to crates.io
 
 <!-- next-url -->
-[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/v0.5.0...HEAD
+[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/embedded-graphics/tinybmp/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/embedded-graphics/tinybmp/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.2...v0.3.3
