@@ -192,6 +192,16 @@ mod parser;
 mod raw_bmp;
 mod raw_iter;
 
+macro_rules! propagate {
+    ($e:expr) => {
+        match $e {
+            Ok(ok) => ok,
+            Err(e) => return Err(e),
+        }
+    };
+}
+pub(crate) use propagate;
+
 use raw_bmp::ColorType;
 use raw_iter::{RawColors, Rle4Pixels, Rle8Pixels};
 
@@ -219,8 +229,8 @@ where
     ///
     /// The created object keeps a shared reference to the input and does not dynamically allocate
     /// memory.
-    pub fn from_slice(bytes: &'a [u8]) -> Result<Self, ParseError> {
-        let raw_bmp = RawBmp::from_slice(bytes)?;
+    pub const fn from_slice(bytes: &'a [u8]) -> Result<Self, ParseError> {
+        let raw_bmp = propagate!(RawBmp::from_slice(bytes));
 
         Ok(Self {
             raw_bmp,

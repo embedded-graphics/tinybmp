@@ -6,6 +6,9 @@
 
 ## [Unreleased] - ReleaseDate
 
+- [#46](https://github.com/embedded-graphics/tinybmp/pull/46) `Bmp::from_slice` is now `const`, so BMPs can be put in `const`s and `static`s.
+
+
 ## [0.6.0] - 2024-06-11
 
 ### Added

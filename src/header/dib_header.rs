@@ -5,7 +5,7 @@ use embedded_graphics::prelude::*;
 use crate::{
     header::CompressionMethod,
     parser::{le_i32, le_u16, le_u32, take_slice},
-    Bpp, ChannelMasks, ParseError, RowOrder,
+    propagate, Bpp, ChannelMasks, ParseError, RowOrder,
 };
 
 const DIB_INFO_HEADER_SIZE: u32 = 40;
@@ -27,15 +27,15 @@ pub struct DibHeader {
 }
 
 impl DibHeader {
-    pub fn parse(input: &[u8]) -> Result<(&[u8], Self), ParseError> {
-        let (input, dib_header_length) = le_u32(input)?;
+    pub const fn parse(input: &[u8]) -> Result<(&[u8], Self), ParseError> {
+        let (input, dib_header_length) = propagate!(le_u32(input));
 
         // The header size in the BMP includes its own u32, so we strip it out by subtracting 4
         // bytes to get the right final offset to the end of the header.
-        let data_length = dib_header_length
-            .checked_sub(4)
-            .ok_or(ParseError::UnsupportedHeaderLength(dib_header_length))?;
-        let (input, dib_header_data) = take_slice(input, data_length as usize)?;
+        let Some(data_length) = dib_header_length.checked_sub(4) else {
+            return Err(ParseError::UnsupportedHeaderLength(dib_header_length));
+        };
+        let (input, dib_header_data) = propagate!(take_slice(input, data_length as usize));
 
         // Add 4 back on so the constants remain the correct size relative to the BMP
         // documentation/specs.
@@ -48,29 +48,30 @@ impl DibHeader {
         };
 
         // Fields common to all DIB variants
-        let (dib_header_data, image_width) = le_i32(dib_header_data)?;
-        let (dib_header_data, image_height) = le_i32(dib_header_data)?;
-        let (dib_header_data, _color_planes) = le_u16(dib_header_data)?;
-        let (dib_header_data, bpp) = Bpp::parse(dib_header_data)?;
+        let (dib_header_data, image_width) = propagate!(le_i32(dib_header_data));
+        let (dib_header_data, image_height) = propagate!(le_i32(dib_header_data));
+        let (dib_header_data, _color_planes) = propagate!(le_u16(dib_header_data));
+        let (dib_header_data, bpp) = propagate!(Bpp::parse(dib_header_data));
 
         // Extra fields defined by DIB variants
         // Variants are described in
         // <https://www.liquisearch.com/bmp_file_format/file_structure/dib_header_bitmap_information_header>
         // and <https://docs.microsoft.com/en-us/windows/win32/gdi/bitmap-header-types>
-        let (dib_header_data, compression_method) = CompressionMethod::parse(dib_header_data)?;
-        let (dib_header_data, image_data_len) = le_u32(dib_header_data)?;
-        let (dib_header_data, _pels_per_meter_x) = le_u32(dib_header_data)?;
-        let (dib_header_data, _pels_per_meter_y) = le_u32(dib_header_data)?;
-        let (dib_header_data, colors_used) = le_u32(dib_header_data)?;
-        let (dib_header_data, _colors_important) = le_u32(dib_header_data)?;
+        let (dib_header_data, compression_method) =
+            propagate!(CompressionMethod::parse(dib_header_data));
+        let (dib_header_data, image_data_len) = propagate!(le_u32(dib_header_data));
+        let (dib_header_data, _pels_per_meter_x) = propagate!(le_u32(dib_header_data));
+        let (dib_header_data, _pels_per_meter_y) = propagate!(le_u32(dib_header_data));
+        let (dib_header_data, colors_used) = propagate!(le_u32(dib_header_data));
+        let (dib_header_data, _colors_important) = propagate!(le_u32(dib_header_data));
 
         let (_dib_header_data, channel_masks) = if header_type.is_at_least(HeaderType::V3)
-            && compression_method == CompressionMethod::Bitfields
+            && matches!(compression_method, CompressionMethod::Bitfields)
         {
-            let (dib_header_data, mask_red) = le_u32(dib_header_data)?;
-            let (dib_header_data, mask_green) = le_u32(dib_header_data)?;
-            let (dib_header_data, mask_blue) = le_u32(dib_header_data)?;
-            let (dib_header_data, mask_alpha) = le_u32(dib_header_data)?;
+            let (dib_header_data, mask_red) = propagate!(le_u32(dib_header_data));
+            let (dib_header_data, mask_green) = propagate!(le_u32(dib_header_data));
+            let (dib_header_data, mask_blue) = propagate!(le_u32(dib_header_data));
+            let (dib_header_data, mask_alpha) = propagate!(le_u32(dib_header_data));
 
             (
                 dib_header_data,
@@ -127,7 +128,19 @@ pub enum HeaderType {
 }
 
 impl HeaderType {
-    fn is_at_least(self, header_type: HeaderType) -> bool {
-        self >= header_type
+    const fn is_at_least(self, header_type: HeaderType) -> bool {
+        matches!(
+            (self, header_type),
+            (Self::V5, Self::V5)
+                | (Self::V5, Self::V4)
+                | (Self::V5, Self::V3)
+                | (Self::V5, Self::Info)
+                | (Self::V4, Self::V4)
+                | (Self::V4, Self::V3)
+                | (Self::V4, Self::Info)
+                | (Self::V3, Self::V3)
+                | (Self::V3, Self::Info)
+                | (Self::Info, Self::Info)
+        )
     }
 }
