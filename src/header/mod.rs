@@ -7,8 +7,8 @@ use embedded_graphics::prelude::*;
 
 use crate::{
     color_table::ColorTable,
-    parser::{le_u16, le_u32, take, take_slice},
-    ParseError,
+    parser::{le_u16, le_u32, take2, take_slice},
+    try_const, ParseError,
 };
 
 mod dib_header;
@@ -46,8 +46,9 @@ impl Bpp {
         })
     }
 
-    fn parse(input: &[u8]) -> Result<(&[u8], Self), ParseError> {
-        le_u16(input).and_then(|(input, value)| Ok((input, Self::new(value)?)))
+    const fn parse(input: &[u8]) -> Result<(&[u8], Self), ParseError> {
+        let (input, value) = try_const!(le_u16(input));
+        Ok((input, try_const!(Self::new(value))))
     }
 
     /// Returns the number of bits.
@@ -110,27 +111,30 @@ pub struct Header {
 }
 
 impl Header {
-    pub(crate) fn parse(
+    pub(crate) const fn parse(
         input: &[u8],
     ) -> Result<(&[u8], (Header, Option<ColorTable<'_>>)), ParseError> {
         // File header
-        let (input, magic) = take::<2>(input)?;
-        if &magic != b"BM" {
+        let (input, magic) = try_const!(take2(input));
+
+        if !matches!(&magic, b"BM") {
             return Err(ParseError::InvalidFileSignature(magic));
         }
 
-        let (input, file_size) = le_u32(input)?;
-        let (input, _reserved_1) = le_u16(input)?;
-        let (input, _reserved_2) = le_u16(input)?;
-        let (input, image_data_start) = le_u32(input)?;
+        let (input, file_size) = try_const!(le_u32(input));
+        let (input, _reserved_1) = try_const!(le_u16(input));
+        let (input, _reserved_2) = try_const!(le_u16(input));
+        let (input, image_data_start) = try_const!(le_u32(input));
 
         // DIB header
-        let (input, dib_header) = DibHeader::parse(input)?;
+        let (input, dib_header) = try_const!(DibHeader::parse(input));
 
         let (input, color_table) = if dib_header.color_table_num_entries > 0 {
             // Each color table entry is 4 bytes long
-            let (input, table) =
-                take_slice(input, dib_header.color_table_num_entries as usize * 4)?;
+            let (input, table) = try_const!(take_slice(
+                input,
+                dib_header.color_table_num_entries as usize * 4
+            ));
             (input, Some(ColorTable::new(table)))
         } else {
             (input, None)
@@ -231,7 +235,8 @@ impl CompressionMethod {
         })
     }
 
-    fn parse(input: &[u8]) -> Result<(&[u8], Self), ParseError> {
-        le_u32(input).and_then(|(input, value)| Ok((input, Self::new(value)?)))
+    const fn parse(input: &[u8]) -> Result<(&[u8], Self), ParseError> {
+        let (input, value) = try_const!(le_u32(input));
+        Ok((input, try_const!(Self::new(value))))
     }
 }

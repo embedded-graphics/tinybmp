@@ -9,7 +9,7 @@ use crate::{
     color_table::ColorTable,
     header::{Bpp, Header},
     raw_iter::RawPixels,
-    ChannelMasks, ParseError, RowOrder,
+    try_const, ChannelMasks, ParseError, RowOrder,
 };
 
 /// Low-level access to BMP image data.
@@ -39,20 +39,23 @@ impl<'a> RawBmp<'a> {
     ///
     /// The created object keeps a shared reference to the input and does not dynamically allocate
     /// memory.
-    pub fn from_slice(bytes: &'a [u8]) -> Result<Self, ParseError> {
-        let (_remaining, (header, color_table)) = Header::parse(bytes)?;
+    pub const fn from_slice(bytes: &'a [u8]) -> Result<Self, ParseError> {
+        let (_remaining, (header, color_table)) = try_const!(Header::parse(bytes));
 
-        let color_type = ColorType::from_header(&header)?;
+        let color_type = try_const!(ColorType::from_header(&header));
 
         // Believe what the bitmap tells us rather than multiplying width by
         // height by bits-per-pixel, because the image data might be compressed.
         let compressed_data_length = header.image_data_len as usize;
 
-        // The `get` is split into two calls to prevent an possible integer overflow.
-        let image_data = &bytes
-            .get(header.image_data_start..)
-            .and_then(|bytes| bytes.get(..compressed_data_length))
-            .ok_or(ParseError::UnexpectedEndOfFile)?;
+        if bytes.len() < header.image_data_start {
+            return Err(ParseError::UnexpectedEndOfFile);
+        }
+        let (_, image_data) = bytes.split_at(header.image_data_start);
+        if image_data.len() < compressed_data_length {
+            return Err(ParseError::UnexpectedEndOfFile);
+        }
+        let (image_data, _) = image_data.split_at(compressed_data_length);
 
         Ok(Self {
             header,
@@ -160,7 +163,7 @@ pub enum ColorType {
 }
 
 impl ColorType {
-    pub(crate) fn from_header(header: &Header) -> Result<ColorType, ParseError> {
+    pub(crate) const fn from_header(header: &Header) -> Result<ColorType, ParseError> {
         Ok(match header.bpp {
             Bpp::Bits1 => ColorType::Index1,
             Bpp::Bits4 => ColorType::Index4,
@@ -182,7 +185,7 @@ impl ColorType {
             Bpp::Bits24 => ColorType::Rgb888,
             Bpp::Bits32 => {
                 if let Some(masks) = header.channel_masks {
-                    if masks == ChannelMasks::RGB888 {
+                    if let ChannelMasks::RGB888 = masks {
                         ColorType::Xrgb8888
                     } else {
                         return Err(ParseError::UnsupportedChannelMasks);
