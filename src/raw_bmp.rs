@@ -52,7 +52,7 @@ impl<'a> RawBmp<'a> {
             return Err(ParseError::UnexpectedEndOfFile);
         }
         let (_, image_data) = bytes.split_at(header.image_data_start);
-        if bytes.len() < compressed_data_length {
+        if image_data.len() < compressed_data_length {
             return Err(ParseError::UnexpectedEndOfFile);
         }
         let (image_data, _) = image_data.split_at(compressed_data_length);
