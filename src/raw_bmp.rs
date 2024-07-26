@@ -8,9 +8,8 @@ use embedded_graphics::{
 use crate::{
     color_table::ColorTable,
     header::{Bpp, Header},
-    propagate,
     raw_iter::RawPixels,
-    ChannelMasks, ParseError, RowOrder,
+    try_const, ChannelMasks, ParseError, RowOrder,
 };
 
 /// Low-level access to BMP image data.
@@ -41,26 +40,22 @@ impl<'a> RawBmp<'a> {
     /// The created object keeps a shared reference to the input and does not dynamically allocate
     /// memory.
     pub const fn from_slice(bytes: &'a [u8]) -> Result<Self, ParseError> {
-        let (_remaining, (header, color_table)) = propagate!(Header::parse(bytes));
+        let (_remaining, (header, color_table)) = try_const!(Header::parse(bytes));
 
-        let color_type = propagate!(ColorType::from_header(&header));
+        let color_type = try_const!(ColorType::from_header(&header));
 
         // Believe what the bitmap tells us rather than multiplying width by
         // height by bits-per-pixel, because the image data might be compressed.
         let compressed_data_length = header.image_data_len as usize;
 
-        if bytes.len() < header.image_data_start
-            || bytes.len() - header.image_data_start < compressed_data_length
-        {
+        if bytes.len() < header.image_data_start {
             return Err(ParseError::UnexpectedEndOfFile);
         }
-        #[allow(unsafe_code)] // only way to resize a slice in const
-        let image_data = unsafe {
-            core::slice::from_raw_parts(
-                bytes.as_ptr().add(header.image_data_start),
-                compressed_data_length,
-            )
-        };
+        let (_, image_data) = bytes.split_at(header.image_data_start);
+        if bytes.len() < compressed_data_length {
+            return Err(ParseError::UnexpectedEndOfFile);
+        }
+        let (image_data, _) = image_data.split_at(compressed_data_length);
 
         Ok(Self {
             header,

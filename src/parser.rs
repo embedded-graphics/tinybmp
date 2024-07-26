@@ -1,5 +1,6 @@
-use crate::{propagate, ParseError};
+use crate::{try_const, ParseError};
 
+// MSRV: Use `split_at_checked` (1.80.0) and `split_first_chunk` (1.77.0) in this module.
 pub const fn take2(input: &[u8]) -> Result<(&[u8], [u8; 2]), ParseError> {
     if let [a, b, rest @ ..] = input {
         Ok((rest, [*a, *b]))
@@ -26,16 +27,16 @@ pub const fn take_slice(input: &[u8], length: usize) -> Result<(&[u8], &[u8]), P
 }
 
 pub const fn le_u16(input: &[u8]) -> Result<(&[u8], u16), ParseError> {
-    let (input, value) = propagate!(take2(input));
+    let (input, value) = try_const!(take2(input));
     Ok((input, u16::from_le_bytes(value)))
 }
 
 pub const fn le_u32(input: &[u8]) -> Result<(&[u8], u32), ParseError> {
-    let (input, value) = propagate!(take4(input));
+    let (input, value) = try_const!(take4(input));
     Ok((input, u32::from_le_bytes(value)))
 }
 
 pub const fn le_i32(input: &[u8]) -> Result<(&[u8], i32), ParseError> {
-    let (input, value) = propagate!(take4(input));
+    let (input, value) = try_const!(take4(input));
     Ok((input, i32::from_le_bytes(value)))
 }
