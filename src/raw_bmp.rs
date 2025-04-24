@@ -51,7 +51,7 @@ impl<'a> RawBmp<'a> {
             return Err(ParseError::UnexpectedEndOfFile);
         }
         let (_, image_data) = bytes.split_at(header.image_data_start);
-        if let crate::header::CompressionMethod::Rgb = header.compression_method { 
+        if let crate::header::CompressionMethod::Rgb = header.compression_method {
             // We can use image_data directly when compression is Rgb
             Ok(Self {
                 header,
