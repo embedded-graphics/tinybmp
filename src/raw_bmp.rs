@@ -51,8 +51,23 @@ impl<'a> RawBmp<'a> {
             return Err(ParseError::UnexpectedEndOfFile);
         }
         let (_, image_data) = bytes.split_at(header.image_data_start);
+
+        // image_data_length is only meaningful when it's not RGB
+        // see biSizeImage on https://learn.microsoft.com/en-us/previous-versions/dd183376(v=vs.85)
+        // so we use it for CompressionMethod other than Rgb
         if let crate::header::CompressionMethod::Rgb = header.compression_method {
-            // We can use image_data directly when compression is Rgb
+            let height = header.image_size.height as usize;
+
+            let data_length = header.bytes_per_row().checked_mul(height);
+            if data_length.is_none() {
+                return Err(ParseError::UnexpectedEndOfFile);
+            }
+            let data_length = data_length.unwrap();
+            if image_data.len() < data_length {
+                return Err(ParseError::UnexpectedEndOfFile);
+            }
+            let (image_data, _) = image_data.split_at(data_length);
+
             Ok(Self {
                 header,
                 color_type,
@@ -60,8 +75,6 @@ impl<'a> RawBmp<'a> {
                 image_data,
             })
         } else {
-            // compressed_data_length is only meaningful when it's not RGB
-            // src: https://github.com/kaitai-io/kaitai_struct_formats/blob/ce88979ea1d5d54150dfe14785b6d5f2cc754c0a/image/bmp.ksy#L300
             let compressed_data_length = header.image_data_len as usize;
             if image_data.len() < compressed_data_length {
                 return Err(ParseError::UnexpectedEndOfFile);
