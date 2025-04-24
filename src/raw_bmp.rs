@@ -58,11 +58,11 @@ impl<'a> RawBmp<'a> {
         if let crate::header::CompressionMethod::Rgb = header.compression_method {
             let height = header.image_size.height as usize;
 
-            let data_length = header.bytes_per_row().checked_mul(height);
-            if data_length.is_none() {
-                return Err(ParseError::UnexpectedEndOfFile);
-            }
-            let data_length = data_length.unwrap();
+            let data_length = match header.bytes_per_row().checked_mul(height) {
+                Some(res) => res,
+                None => return Err(ParseError::UnexpectedEndOfFile),
+            };
+
             if image_data.len() < data_length {
                 return Err(ParseError::UnexpectedEndOfFile);
             }
