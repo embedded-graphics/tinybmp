@@ -46,23 +46,34 @@ impl<'a> RawBmp<'a> {
 
         // Believe what the bitmap tells us rather than multiplying width by
         // height by bits-per-pixel, because the image data might be compressed.
-        let compressed_data_length = header.image_data_len as usize;
 
         if bytes.len() < header.image_data_start {
             return Err(ParseError::UnexpectedEndOfFile);
         }
         let (_, image_data) = bytes.split_at(header.image_data_start);
-        if image_data.len() < compressed_data_length {
-            return Err(ParseError::UnexpectedEndOfFile);
+        if let crate::header::CompressionMethod::Rgb = header.compression_method { 
+            // We can use image_data directly when compression is Rgb
+            Ok(Self {
+                header,
+                color_type,
+                color_table,
+                image_data,
+            })
+        } else {
+            // compressed_data_length is only meaningful when it's not RGB
+            // src: https://github.com/kaitai-io/kaitai_struct_formats/blob/ce88979ea1d5d54150dfe14785b6d5f2cc754c0a/image/bmp.ksy#L300
+            let compressed_data_length = header.image_data_len as usize;
+            if image_data.len() < compressed_data_length {
+                return Err(ParseError::UnexpectedEndOfFile);
+            }
+            let (image_data, _) = image_data.split_at(compressed_data_length);
+            Ok(Self {
+                header,
+                color_type,
+                color_table,
+                image_data,
+            })
         }
-        let (image_data, _) = image_data.split_at(compressed_data_length);
-
-        Ok(Self {
-            header,
-            color_type,
-            color_table,
-            image_data,
-        })
     }
 
     /// Returns the color table associated with the image.

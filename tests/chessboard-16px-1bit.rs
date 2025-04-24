@@ -25,11 +25,11 @@ fn chessboard_16px_1bit() {
 
     let color_table = bmp.color_table().unwrap();
     assert_eq!(color_table.len(), 2);
-    assert_eq!(color_table.get(1), Some(Rgb888::BLACK));
-    assert_eq!(color_table.get(0), Some(Rgb888::WHITE));
+    assert_eq!(color_table.get(0), Some(Rgb888::BLACK));
+    assert_eq!(color_table.get(1), Some(Rgb888::WHITE));
     assert_eq!(color_table.get(2), None);
 
-    assert_eq!(bmp.image_data().len(), 94 - 62);
+    assert_eq!(bmp.image_data().len(), 64);
 }
 
 #[test]
