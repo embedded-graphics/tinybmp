@@ -44,19 +44,15 @@ impl<'a> RawBmp<'a> {
 
         let color_type = try_const!(ColorType::from_header(&header));
 
-        // Believe what the bitmap tells us rather than multiplying width by
-        // height by bits-per-pixel, because the image data might be compressed.
-
         if bytes.len() < header.image_data_start {
             return Err(ParseError::UnexpectedEndOfFile);
         }
         let (_, image_data) = bytes.split_at(header.image_data_start);
 
-        // `Header::image_data_len` is only meaningful when it's not RGB
-        // see biSizeImage on https://learn.microsoft.com/en-us/previous-versions/dd183376(v=vs.85)
-        // so we use it for CompressionMethod other than Rgb
-
         let data_length = if let crate::header::CompressionMethod::Rgb = header.compression_method {
+            // `Header::image_data_len` may be zero or bogus when compression mode is RGB 
+            // see `biSizeImage` on https://learn.microsoft.com/en-us/previous-versions/dd183376(v=vs.85)
+            // so we should calculate width x height instead.
             let height = header.image_size.height as usize;
 
             let Some(data_length) = header.bytes_per_row().checked_mul(height) else {
@@ -64,6 +60,8 @@ impl<'a> RawBmp<'a> {
             };
             data_length
         } else {
+            // Believe what the bitmap tells us rather than multiplying width by
+            // height by bits-per-pixel, because the image data might be compressed.
             header.image_data_len as usize
         };
         
