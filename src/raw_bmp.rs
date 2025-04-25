@@ -52,41 +52,33 @@ impl<'a> RawBmp<'a> {
         }
         let (_, image_data) = bytes.split_at(header.image_data_start);
 
-        // image_data_length is only meaningful when it's not RGB
+        // `Header::image_data_len` is only meaningful when it's not RGB
         // see biSizeImage on https://learn.microsoft.com/en-us/previous-versions/dd183376(v=vs.85)
         // so we use it for CompressionMethod other than Rgb
-        if let crate::header::CompressionMethod::Rgb = header.compression_method {
+
+        let data_length = if let crate::header::CompressionMethod::Rgb = header.compression_method {
             let height = header.image_size.height as usize;
 
-            let data_length = match header.bytes_per_row().checked_mul(height) {
-                Some(res) => res,
-                None => return Err(ParseError::UnexpectedEndOfFile),
+            let Some(data_length) = header.bytes_per_row().checked_mul(height) else {
+                return Err(ParseError::UnexpectedEndOfFile)
             };
-
-            if image_data.len() < data_length {
-                return Err(ParseError::UnexpectedEndOfFile);
-            }
-            let (image_data, _) = image_data.split_at(data_length);
-
-            Ok(Self {
-                header,
-                color_type,
-                color_table,
-                image_data,
-            })
+            data_length
         } else {
-            let compressed_data_length = header.image_data_len as usize;
-            if image_data.len() < compressed_data_length {
-                return Err(ParseError::UnexpectedEndOfFile);
-            }
-            let (image_data, _) = image_data.split_at(compressed_data_length);
-            Ok(Self {
-                header,
-                color_type,
-                color_table,
-                image_data,
-            })
+            header.image_data_len as usize
+        };
+        
+        if image_data.len() < data_length {
+            return Err(ParseError::UnexpectedEndOfFile);
         }
+
+        let (image_data, _) = image_data.split_at(data_length);
+
+        Ok(Self {
+            header,
+            color_type,
+            color_table,
+            image_data,
+        })
     }
 
     /// Returns the color table associated with the image.
