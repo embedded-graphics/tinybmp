@@ -161,8 +161,8 @@ impl Header {
     /// Returns the row length in bytes.
     ///
     /// Each row in a BMP file is a multiple of 4 bytes long.
-    pub(crate) fn bytes_per_row(&self) -> usize {
-        let bits_per_row = self.image_size.width as usize * usize::from(self.bpp.bits());
+    pub(crate) const fn bytes_per_row(&self) -> usize {
+        let bits_per_row = self.image_size.width as usize * self.bpp.bits() as usize;
 
         (bits_per_row + 31) / 32 * (32 / 8)
     }
