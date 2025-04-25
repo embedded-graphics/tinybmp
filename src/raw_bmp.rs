@@ -50,13 +50,13 @@ impl<'a> RawBmp<'a> {
         let (_, image_data) = bytes.split_at(header.image_data_start);
 
         let data_length = if let crate::header::CompressionMethod::Rgb = header.compression_method {
-            // `Header::image_data_len` may be zero or bogus when compression mode is RGB 
+            // `Header::image_data_len` may be zero or bogus when compression mode is RGB
             // see `biSizeImage` on https://learn.microsoft.com/en-us/previous-versions/dd183376(v=vs.85)
             // so we should calculate width x height instead.
             let height = header.image_size.height as usize;
 
             let Some(data_length) = header.bytes_per_row().checked_mul(height) else {
-                return Err(ParseError::UnexpectedEndOfFile)
+                return Err(ParseError::UnexpectedEndOfFile);
             };
             data_length
         } else {
@@ -64,7 +64,7 @@ impl<'a> RawBmp<'a> {
             // height by bits-per-pixel, because the image data might be compressed.
             header.image_data_len as usize
         };
-        
+
         if image_data.len() < data_length {
             return Err(ParseError::UnexpectedEndOfFile);
         }
