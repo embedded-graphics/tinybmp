@@ -7,7 +7,7 @@ Target audience: crate maintainers who wish to release `tinybmp`.
 ## On GitHub
 
 - Check that all desired PRs are merged and all desired issues are closed/resolved.
-- Check that the latest master build passed in CircleCI.
+- Check that the latest main branch build passed all CI tests.
 
 ## On your local machine
 

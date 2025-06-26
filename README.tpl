@@ -1,6 +1,6 @@
 # TinyBMP
 
-[![Build Status](https://circleci.com/gh/embedded-graphics/tinybmp/tree/master.svg?style=shield)](https://circleci.com/gh/embedded-graphics/tinybmp/tree/master)
+[![CI Status](https://github.com/embedded-graphics/tinybmp/actions/workflows/ci.yml/badge.svg)](https://github.com/embedded-graphics/tinybmp/actions/workflows/ci.yml)
 [![Crates.io](https://img.shields.io/crates/v/tinybmp.svg)](https://crates.io/crates/tinybmp)
 [![Docs.rs](https://docs.rs/tinybmp/badge.svg)](https://docs.rs/tinybmp)
 [![embedded-graphics on Matrix](https://img.shields.io/matrix/rust-embedded-graphics:matrix.org)](https://matrix.to/#/#rust-embedded-graphics:matrix.org)
