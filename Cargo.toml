@@ -33,3 +33,7 @@ embedded-graphics = "0.8.0"
 clap = { version = "3.1.6", features = ["derive"] }
 criterion = "0.3.5"
 embedded-graphics-simulator = { version = "0.5.0", default-features = false }
+
+[patch.crates-io]
+embedded-graphics = { git = "https://github.com/embedded-graphics/embedded-graphics.git" }
+embedded-graphics-simulator = { git = "https://github.com/embedded-graphics/simulator.git" }

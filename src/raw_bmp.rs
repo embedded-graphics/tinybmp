@@ -1,7 +1,7 @@
 use embedded_graphics::{
     geometry::Point,
     iterator::raw::RawDataSlice,
-    pixelcolor::raw::{LittleEndian, RawU1, RawU16, RawU24, RawU32, RawU4, RawU8},
+    pixelcolor::raw::{LittleEndianMsb0, RawU1, RawU16, RawU24, RawU32, RawU4, RawU8},
     prelude::RawData,
 };
 
@@ -137,27 +137,27 @@ impl<'a> RawBmp<'a> {
         }?;
 
         match self.header.bpp {
-            Bpp::Bits1 => RawDataSlice::<RawU1, LittleEndian>::new(row)
+            Bpp::Bits1 => RawDataSlice::<RawU1, LittleEndianMsb0>::new(row)
                 .into_iter()
                 .nth(p.x as usize)
                 .map(|raw| u32::from(raw.into_inner())),
-            Bpp::Bits4 => RawDataSlice::<RawU4, LittleEndian>::new(row)
+            Bpp::Bits4 => RawDataSlice::<RawU4, LittleEndianMsb0>::new(row)
                 .into_iter()
                 .nth(p.x as usize)
                 .map(|raw| u32::from(raw.into_inner())),
-            Bpp::Bits8 => RawDataSlice::<RawU8, LittleEndian>::new(row)
+            Bpp::Bits8 => RawDataSlice::<RawU8, LittleEndianMsb0>::new(row)
                 .into_iter()
                 .nth(p.x as usize)
                 .map(|raw| u32::from(raw.into_inner())),
-            Bpp::Bits16 => RawDataSlice::<RawU16, LittleEndian>::new(row)
+            Bpp::Bits16 => RawDataSlice::<RawU16, LittleEndianMsb0>::new(row)
                 .into_iter()
                 .nth(p.x as usize)
                 .map(|raw| u32::from(raw.into_inner())),
-            Bpp::Bits24 => RawDataSlice::<RawU24, LittleEndian>::new(row)
+            Bpp::Bits24 => RawDataSlice::<RawU24, LittleEndianMsb0>::new(row)
                 .into_iter()
                 .nth(p.x as usize)
                 .map(|raw| raw.into_inner()),
-            Bpp::Bits32 => RawDataSlice::<RawU32, LittleEndian>::new(row)
+            Bpp::Bits32 => RawDataSlice::<RawU32, LittleEndianMsb0>::new(row)
                 .into_iter()
                 .nth(p.x as usize)
                 .map(|raw| raw.into_inner()),

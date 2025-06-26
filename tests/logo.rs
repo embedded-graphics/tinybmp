@@ -1,7 +1,7 @@
 use embedded_graphics::{
     image::{GetPixel, Image, ImageRaw},
     iterator::raw::RawDataSlice,
-    pixelcolor::{raw::LittleEndian, Bgr888, Rgb555, Rgb565, Rgb888},
+    pixelcolor::{raw::LittleEndianMsb0, Bgr888, Rgb555, Rgb565, Rgb888},
     prelude::*,
 };
 use tinybmp::Bmp;
@@ -85,9 +85,9 @@ impl<C> OriginDimensions for Framebuffer<C> {
 fn draw_raw<C>(data: &[u8]) -> Framebuffer<C>
 where
     C: PixelColor + From<C::Raw> + From<Rgb888> + std::fmt::Debug,
-    for<'a> RawDataSlice<'a, C::Raw, LittleEndian>: IntoIterator<Item = C::Raw>,
+    for<'a> RawDataSlice<'a, C::Raw, LittleEndianMsb0>: IntoIterator<Item = C::Raw>,
 {
-    let raw = ImageRaw::<C, LittleEndian>::new(data, 240);
+    let raw = ImageRaw::<C, LittleEndianMsb0>::new(data, Size::new(240, 320)).unwrap();
 
     Framebuffer::from_image(raw)
 }
