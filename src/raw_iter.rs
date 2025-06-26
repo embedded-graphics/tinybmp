@@ -2,7 +2,7 @@ use core::{iter, slice};
 
 use embedded_graphics::{
     iterator::raw::RawDataSlice,
-    pixelcolor::raw::{LittleEndian, RawU1, RawU16, RawU24, RawU32, RawU4, RawU8},
+    pixelcolor::raw::{LittleEndianMsb0, RawU1, RawU16, RawU24, RawU32, RawU4, RawU8},
     prelude::*,
     primitives::{rectangle, Rectangle},
 };
@@ -16,17 +16,17 @@ use crate::{
 #[allow(missing_debug_implementations)]
 pub struct RawColors<'a, R>
 where
-    RawDataSlice<'a, R, LittleEndian>: IntoIterator<Item = R>,
+    RawDataSlice<'a, R, LittleEndianMsb0>: IntoIterator<Item = R>,
 {
     rows: slice::ChunksExact<'a, u8>,
     row_order: RowOrder,
-    current_row: iter::Take<<RawDataSlice<'a, R, LittleEndian> as IntoIterator>::IntoIter>,
+    current_row: iter::Take<<RawDataSlice<'a, R, LittleEndianMsb0> as IntoIterator>::IntoIter>,
     width: usize,
 }
 
 impl<'a, R> RawColors<'a, R>
 where
-    RawDataSlice<'a, R, LittleEndian>: IntoIterator<Item = R>,
+    RawDataSlice<'a, R, LittleEndianMsb0>: IntoIterator<Item = R>,
 {
     pub(crate) fn new(raw_bmp: &'a RawBmp<'a>) -> Self {
         let header = raw_bmp.header();
@@ -44,7 +44,7 @@ where
 
 impl<'a, R> Iterator for RawColors<'a, R>
 where
-    RawDataSlice<'a, R, LittleEndian>: IntoIterator<Item = R>,
+    RawDataSlice<'a, R, LittleEndianMsb0>: IntoIterator<Item = R>,
 {
     type Item = R;
 
