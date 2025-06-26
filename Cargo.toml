@@ -12,12 +12,8 @@ readme = "./README.md"
 license = "MIT OR Apache-2.0"
 exclude = [
     "/.github/",
-    "/.circleci/",
     ".gitignore",
 ]
-
-[badges]
-circle-ci = { repository = "embedded-graphics/tinybmp", branch = "master" }
 
 [[test]]
 name = "embedded_graphics"
@@ -36,4 +32,4 @@ embedded-graphics = "0.8.0"
 [dev-dependencies]
 clap = { version = "3.1.6", features = ["derive"] }
 criterion = "0.3.5"
-embedded-graphics-simulator = "0.5.0"
+embedded-graphics-simulator = { version = "0.5.0", default-features = false }

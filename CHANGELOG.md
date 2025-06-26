@@ -6,15 +6,17 @@
 
 ## [Unreleased] - ReleaseDate
 
-- [#46](https://github.com/embedded-graphics/tinybmp/pull/46) `Bmp::from_slice` is now `const`, so BMPs can be put in `const`s and `static`s.
+### Changed
 
-- [#47](https://github.com/embedded-graphics/tinybmp/pull/47) Ignore compressed data length on RGB compression mehod
+- **(breaking)** [#49](https://github.com/embedded-graphics/tinybmp/pull/41) Use 1.81 as the MSRV.
+- [#46](https://github.com/embedded-graphics/tinybmp/pull/46) `Bmp::from_slice` is now `const`, so BMPs can be put in `const`s and `static`s.
+- [#47](https://github.com/embedded-graphics/tinybmp/pull/47) Ignore compressed data length on RGB compression method.
 
 ## [0.6.0] - 2024-06-11
 
 ### Added
 
-- [#41](https://github.com/embedded-graphics/tinybmp/pull/41) Added support for RLE8 and RLE4 encoded bitmaps
+- [#41](https://github.com/embedded-graphics/tinybmp/pull/41) Added support for RLE8 and RLE4 encoded bitmaps.
 
 ### Changed
 

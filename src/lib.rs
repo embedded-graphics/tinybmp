@@ -133,7 +133,7 @@
 //!
 //! # Minimum supported Rust version
 //!
-//! The minimum supported Rust version for tinybmp is `1.71` or greater. Ensure you have the correct
+//! The minimum supported Rust version for tinybmp is `1.81` or greater. Ensure you have the correct
 //! version of Rust installed, preferably through <https://rustup.rs>.
 //!
 //! <!-- README-LINKS
