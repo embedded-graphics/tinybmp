@@ -419,7 +419,7 @@ impl<'a> Iterator for Rle4Pixels<'a> {
                                         remaining: param.saturating_sub(1),
                                         is_odd: (param % 2) != 0,
                                         // padding if the number of *bytes* is odd
-                                        has_padding: ((param >> 1) % 2) != 0,
+                                        has_padding: (param & 0b11).count_ones() == 1,
                                     };
                                 }
                             }
