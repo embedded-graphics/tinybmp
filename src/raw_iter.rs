@@ -28,7 +28,8 @@ impl<'a, R> RawColors<'a, R>
 where
     RawDataSlice<'a, R, LittleEndian>: IntoIterator<Item = R>,
 {
-    pub(crate) fn new(raw_bmp: &'a RawBmp<'a>) -> Self {
+    /// Create a new raw color iterator.
+    pub fn new(raw_bmp: &'a RawBmp<'a>) -> Self {
         let header = raw_bmp.header();
 
         let width = header.image_size.width as usize;
@@ -129,7 +130,7 @@ pub struct Rle8Pixels<'a> {
 
 impl<'a> Rle8Pixels<'a> {
     /// Create a new RLE pixel iterator.
-    pub(crate) fn new(raw_bmp: &RawBmp<'a>) -> Rle8Pixels<'a> {
+    pub fn new(raw_bmp: &RawBmp<'a>) -> Rle8Pixels<'a> {
         let header = raw_bmp.header();
         Rle8Pixels {
             data: raw_bmp.image_data(),
@@ -273,7 +274,7 @@ pub struct Rle4Pixels<'a> {
 
 impl<'a> Rle4Pixels<'a> {
     /// Create a new RLE pixel iterator.
-    pub(crate) fn new(raw_bmp: &RawBmp<'a>) -> Rle4Pixels<'a> {
+    pub fn new(raw_bmp: &RawBmp<'a>) -> Rle4Pixels<'a> {
         let header = raw_bmp.header();
         Rle4Pixels {
             data: raw_bmp.image_data(),
