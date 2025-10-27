@@ -6,6 +6,10 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Added
+
+- Make `RawColors`, `Rle4Pixels` and `Rle8Pixels` public.
+
 ### Changed
 
 - **(breaking)** [#49](https://github.com/embedded-graphics/tinybmp/pull/41) Use 1.81 as the MSRV.
