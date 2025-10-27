@@ -1,0 +1,110 @@
+use embedded_graphics::{
+    image::{Image, ImageRaw},
+    iterator::raw::RawDataSlice,
+    pixelcolor::{raw::LittleEndian, Bgr888, Rgb555, Rgb565, Rgb888},
+    prelude::*,
+};
+use tinybmp::Bmp;
+
+const WIDTH: usize = 20;
+const HEIGHT: usize = 20;
+
+// TODO: use e-g framebuffer when it's added
+#[derive(Debug, PartialEq)]
+struct Framebuffer<C> {
+    pixels: [[C; WIDTH]; HEIGHT],
+}
+
+impl<C: PixelColor + From<Rgb888> + std::fmt::Debug> Framebuffer<C> {
+    pub fn new() -> Self {
+        let color = C::from(Rgb888::BLACK);
+
+        Self {
+            pixels: [[color; WIDTH]; HEIGHT],
+        }
+    }
+
+    pub fn from_image(image: impl ImageDrawable<Color = C>) -> Self {
+        let mut framebuffer = Framebuffer::<C>::new();
+        Image::new(&image, Point::zero())
+            .draw(&mut framebuffer)
+            .unwrap();
+        framebuffer
+    }
+
+    pub fn pixels(&self) -> impl Iterator<Item = C> + '_ {
+        self.pixels.iter().flatten().copied()
+    }
+
+    pub fn assert_eq(&self, expected: &Self) {
+        let zipped = || self.pixels().zip(expected.pixels());
+
+        let errors = zipped().filter(|(a, b)| a != b).count();
+        let first_error = zipped()
+            .enumerate()
+            .find(|(_, (a, b))| a != b)
+            .map(|(i, (a, b))| (Point::new((i % WIDTH) as i32, (i / WIDTH) as i32), a, b));
+
+        //let first_error = self.pixels()
+
+        if self != expected {
+            let first_error = first_error.unwrap();
+            panic!(
+                "framebuffer differs from expected\n{} errors\nfirst error at ({}): {:?} (expected {:?})",
+                errors,
+                first_error.0,
+                first_error.1,
+                first_error.2,
+            );
+        }
+    }
+}
+
+impl<C: PixelColor> DrawTarget for Framebuffer<C> {
+    type Color = C;
+    type Error = std::convert::Infallible;
+
+    fn draw_iter<I>(&mut self, pixels: I) -> Result<(), Self::Error>
+    where
+        I: IntoIterator<Item = embedded_graphics::Pixel<Self::Color>>,
+    {
+        for Pixel(p, c) in pixels {
+            self.pixels[p.y as usize][p.x as usize] = c;
+        }
+
+        Ok(())
+    }
+}
+
+impl<C> OriginDimensions for Framebuffer<C> {
+    fn size(&self) -> embedded_graphics::prelude::Size {
+        Size::new(WIDTH as u32, HEIGHT as u32)
+    }
+}
+
+fn draw_raw<C>(data: &[u8]) -> Framebuffer<C>
+where
+    C: PixelColor + From<C::Raw> + From<Rgb888> + std::fmt::Debug,
+    for<'a> RawDataSlice<'a, C::Raw, LittleEndian>: IntoIterator<Item = C::Raw>,
+{
+    let raw = ImageRaw::<C, LittleEndian>::new(data, WIDTH as u32);
+
+    Framebuffer::from_image(raw)
+}
+
+fn draw_bmp<C>(data: &[u8]) -> Framebuffer<C>
+where
+    C: PixelColor + From<Rgb555> + From<Rgb565> + From<Rgb888> + std::fmt::Debug,
+{
+    let bmp = Bmp::<C>::from_slice(data).unwrap();
+
+    Framebuffer::from_image(bmp)
+}
+
+#[test]
+fn ethernet_port() {
+    let raw = draw_raw::<Bgr888>(include_bytes!("ethernet_port.raw"));
+    let bmp = draw_bmp::<Bgr888>(include_bytes!("ethernet_port.bmp"));
+
+    bmp.assert_eq(&raw);
+}
