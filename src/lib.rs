@@ -205,14 +205,13 @@ macro_rules! try_const {
 pub(crate) use try_const;
 
 use raw_bmp::ColorType;
-use raw_iter::{RawColors, Rle4Pixels, Rle8Pixels};
 
 pub use color_table::ColorTable;
 pub use header::CompressionMethod;
 pub use header::{Bpp, ChannelMasks, Header, RowOrder};
 pub use iter::Pixels;
 pub use raw_bmp::RawBmp;
-pub use raw_iter::{RawPixel, RawPixels};
+pub use raw_iter::{RawColors, RawPixel, RawPixels, Rle4Pixels, Rle8Pixels};
 
 /// A BMP-format bitmap.
 ///
