@@ -8,7 +8,7 @@
 
 ### Fixed
 
-- Incorrect handling of paddings for absolute sequences
+- [#50](https://github.com/embedded-graphics/tinybmp/pull/50) Fixed handling of padding bytes in absolute mode for RLE4 compressed files.
 
 ### Changed
 
