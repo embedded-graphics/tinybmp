@@ -1,7 +1,7 @@
 use embedded_graphics::{
-    image::Image,
+    image::{Image, ImageRawLE},
     mock_display::{ColorMapping, MockDisplay},
-    pixelcolor::{Gray8, Rgb555, Rgb565, Rgb888},
+    pixelcolor::{Bgr888, Gray8, Rgb555, Rgb565, Rgb888},
     prelude::*,
     primitives::Rectangle,
 };
@@ -148,4 +148,22 @@ fn issue_8_height_is_negative() {
 
     bottom_up_display.assert_pattern(&["WK", "KK"]);
     top_down_display.assert_eq(&bottom_up_display);
+}
+
+/// Test for PR #50
+#[test]
+fn pr_50_rle4_padding() {
+    let bmp = Bmp::<Bgr888>::from_slice(include_bytes!("pr_50_rle4_padding.bmp")).unwrap();
+    let raw = ImageRawLE::<Bgr888>::new(include_bytes!("pr_50_rle4_padding.raw"), 20);
+
+    assert_eq!(raw.size(), Size::new(20, 20));
+    assert_eq!(bmp.size(), Size::new(20, 20));
+
+    let mut display_bmp = MockDisplay::new();
+    let mut display_raw = MockDisplay::new();
+
+    bmp.draw(&mut display_bmp).unwrap();
+    raw.draw(&mut display_raw).unwrap();
+
+    display_bmp.assert_eq(&display_raw);
 }

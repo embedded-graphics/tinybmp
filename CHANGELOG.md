@@ -6,6 +6,10 @@
 
 ## [Unreleased] - ReleaseDate
 
+### Fixed
+
+- [#50](https://github.com/embedded-graphics/tinybmp/pull/50) Fixed handling of padding bytes in absolute mode for RLE4 compressed files.
+
 ### Changed
 
 - **(breaking)** [#49](https://github.com/embedded-graphics/tinybmp/pull/41) Use 1.81 as the MSRV.
