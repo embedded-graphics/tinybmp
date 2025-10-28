@@ -413,13 +413,14 @@ impl<'a> Iterator for Rle4Pixels<'a> {
                                     // Delta encoding is unsupported.
                                     return None;
                                 }
-                                _ => {
+                                num_pixels => {
+                                    let num_bytes = num_pixels.div_ceil(2);
                                     // Absolute mode
                                     self.rle_state = RleState::Absolute {
                                         remaining: param.saturating_sub(1),
                                         is_odd: (param % 2) != 0,
                                         // padding if the number of *bytes* is odd
-                                        has_padding: (param & 0b11).count_ones() == 1,
+                                        has_padding: num_bytes & 1 != 0,
                                     };
                                 }
                             }
