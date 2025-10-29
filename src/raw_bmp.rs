@@ -174,6 +174,7 @@ pub enum ColorType {
     Rgb565,
     Rgb888,
     Xrgb8888,
+    Argb8888,
 }
 
 impl ColorType {
@@ -201,6 +202,8 @@ impl ColorType {
                 if let Some(masks) = header.channel_masks {
                     if let ChannelMasks::RGB888 = masks {
                         ColorType::Xrgb8888
+                    } else if masks == ChannelMasks::ARGB888 {
+                        ColorType::Argb8888
                     } else {
                         return Err(ParseError::UnsupportedChannelMasks);
                     }
