@@ -12,7 +12,8 @@
 
 ### Added
 
-- Make `RawColors`, `Rle4Pixels` and `Rle8Pixels` public.
+- [#51](https://github.com/embedded-graphics/tinybmp/pull/51) Added `RawBmp::colors` method to iterator of the raw color values in a file.
+- [#51](https://github.com/embedded-graphics/tinybmp/pull/51) Added `DynamicRawColors`, `RawColors`, `Rle4Colors`, and `Rle8Colors` iterators.
 
 ### Changed
 
