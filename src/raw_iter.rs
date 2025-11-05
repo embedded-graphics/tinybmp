@@ -113,6 +113,13 @@ enum RleState {
     EndOfBitmap,
 }
 
+struct RlePixelPoints {
+    /// The location of the next pixel
+    next_pixel: Point,
+    /// The width of a line in pixels
+    width: u32,
+}
+
 /// Iterator over individual BMP RLE8 encoded pixels.
 ///
 /// Each pixel is returned as a `u32` regardless of the bit depth of the source image.
@@ -122,29 +129,17 @@ pub struct Rle8Pixels<'a> {
     data: &'a [u8],
     /// Our state
     rle_state: RleState,
-    /// The width of a line in pixels
-    width: u32,
-    /// The location of the next pixel
-    next_pixel: Point,
+    points: RlePixelPoints,
 }
 
-impl<'a> Rle8Pixels<'a> {
-    /// Create a new RLE pixel iterator.
-    pub fn new(raw_bmp: &RawBmp<'a>) -> Rle8Pixels<'a> {
-        let header = raw_bmp.header();
-        Rle8Pixels {
-            data: raw_bmp.image_data(),
-            rle_state: RleState::Starting,
-            width: header.image_size.width,
-            // RLE encoded bitmaps are upside down
-            next_pixel: Point::new(0, (header.image_size.height - 1) as i32),
-        }
+impl RlePixelPoints {
+    fn peek(&self) -> Point {
+        self.next_pixel
     }
-
     /// Bump the cursor to the next position in the bitmap.
     ///
     /// Note that RLE bitmaps are upside down.
-    fn move_position(&mut self) -> Point {
+    fn advance(&mut self) -> Point {
         let old_position = self.next_pixel;
         self.next_pixel.x += 1;
         if self.next_pixel.x == self.width as i32 {
@@ -152,6 +147,22 @@ impl<'a> Rle8Pixels<'a> {
             self.next_pixel.y = self.next_pixel.y.saturating_sub(1);
         }
         old_position
+    }
+}
+
+impl<'a> Rle8Pixels<'a> {
+    /// Create a new RLE pixel iterator.
+    pub(crate) fn new(raw_bmp: &RawBmp<'a>) -> Rle8Pixels<'a> {
+        let header = raw_bmp.header();
+        Rle8Pixels {
+            data: raw_bmp.image_data(),
+            rle_state: RleState::Starting,
+            points: RlePixelPoints {
+                width: header.image_size.width,
+                // RLE encoded bitmaps are upside down
+                next_pixel: Point::new(0, (header.image_size.height - 1) as i32),
+            },
+        }
     }
 }
 
@@ -184,7 +195,7 @@ impl<'a> Iterator for Rle8Pixels<'a> {
                     } else {
                         self.data = self.data.get(1..)?;
                     }
-                    let this_pixel = self.move_position();
+                    let this_pixel = self.points.advance();
                     return Some(RawPixel::new(this_pixel, u32::from(value)));
                 }
                 RleState::Running {
@@ -201,7 +212,7 @@ impl<'a> Iterator for Rle8Pixels<'a> {
                             is_odd,
                         };
                     }
-                    let this_pixel = self.move_position();
+                    let this_pixel = self.points.advance();
                     return Some(RawPixel::new(this_pixel, u32::from(value)));
                 }
                 RleState::Starting => {
@@ -219,7 +230,7 @@ impl<'a> Iterator for Rle8Pixels<'a> {
                             match param {
                                 0 => {
                                     // End of line
-                                    if self.next_pixel.x != 0 {
+                                    if self.points.peek().x != 0 {
                                         return None;
                                     }
                                 }
@@ -266,36 +277,23 @@ pub struct Rle4Pixels<'a> {
     data: &'a [u8],
     /// Our state
     rle_state: RleState,
-    /// The width of a line in pixels
-    width: u32,
-    /// The location of the next pixel
-    next_pixel: Point,
+    points: RlePixelPoints,
 }
+
 
 impl<'a> Rle4Pixels<'a> {
     /// Create a new RLE pixel iterator.
-    pub fn new(raw_bmp: &RawBmp<'a>) -> Rle4Pixels<'a> {
+    pub(crate) fn new(raw_bmp: &RawBmp<'a>) -> Rle4Pixels<'a> {
         let header = raw_bmp.header();
         Rle4Pixels {
             data: raw_bmp.image_data(),
             rle_state: RleState::Starting,
-            width: header.image_size.width,
-            // RLE encoded bitmaps are upside down
-            next_pixel: Point::new(0, (header.image_size.height - 1) as i32),
+            points: RlePixelPoints {
+                width: header.image_size.width,
+                // RLE encoded bitmaps are upside down
+                next_pixel: Point::new(0, (header.image_size.height - 1) as i32),
+            },
         }
-    }
-
-    /// Bump the cursor to the next position in the bitmap.
-    ///
-    /// Note that RLE bitmaps are upside down.
-    fn move_position(&mut self) -> Point {
-        let old_position = self.next_pixel;
-        self.next_pixel.x += 1;
-        if self.next_pixel.x == self.width as i32 {
-            self.next_pixel.x = 0;
-            self.next_pixel.y = self.next_pixel.y.saturating_sub(1);
-        }
-        old_position
     }
 }
 
@@ -349,7 +347,7 @@ impl<'a> Iterator for Rle4Pixels<'a> {
                         // remove the padding byte too
                         self.data = self.data.get(1..)?;
                     }
-                    let this_pixel = self.move_position();
+                    let this_pixel = self.points.advance();
                     return Some(RawPixel::new(this_pixel, u32::from(nibble_value)));
                 }
                 RleState::Running {
@@ -384,7 +382,7 @@ impl<'a> Iterator for Rle4Pixels<'a> {
                         };
                     }
 
-                    let this_pixel = self.move_position();
+                    let this_pixel = self.points.advance();
                     return Some(RawPixel::new(this_pixel, u32::from(nibble_value)));
                 }
                 RleState::Starting => {
@@ -402,7 +400,7 @@ impl<'a> Iterator for Rle4Pixels<'a> {
                             match param {
                                 0 => {
                                     // End of line
-                                    if self.next_pixel.x != 0 {
+                                    if self.points.peek().x != 0 {
                                         return None;
                                     }
                                 }
@@ -496,7 +494,7 @@ pub struct RawPixel {
 
 impl RawPixel {
     /// Creates a new raw pixel.
-    pub const fn new(position: Point, color: u32) -> Self {
+    pub(crate) const fn new(position: Point, color: u32) -> Self {
         Self { position, color }
     }
 }
