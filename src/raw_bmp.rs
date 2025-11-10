@@ -103,7 +103,11 @@ impl<'a> RawBmp<'a> {
         RawPixels::new(self)
     }
 
-    /// Return an iterator over the raw colors in the image. Positions are dependent on the row order.
+    /// Returns an iterator over the raw colors in the image.
+    ///
+    /// The iterator returns the color value in the order the pixels are stored in the file.
+    /// Use [`row_order`](DynamicRawColors::row_order) to determine the correct
+    /// pixel arrangement.
     pub fn colors(&self) -> DynamicRawColors<'_> {
         self.pixels().colors
     }

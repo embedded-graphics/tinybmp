@@ -293,7 +293,7 @@ where
                 let fallback_color = C::from(Rgb888::BLACK);
                 if let Some(color_table) = self.raw_bmp.color_table() {
                     if header.compression_method == CompressionMethod::Rle4 {
-                        let (mut colors, _points) = Rle4Colors::new(&self.raw_bmp);
+                        let mut colors = Rle4Colors::new(&self.raw_bmp);
                         let map_color = |color: RawU4| {
                             color_table
                                 .get(color.into_inner() as u32)
@@ -302,7 +302,7 @@ where
                         };
                         // RLE produces pixels in bottom-up order, so we draw them line by line rather than the entire bitmap at once.
                         for y in (0..area.size.height).rev() {
-                            colors.start_a_line();
+                            colors.start_row();
 
                             let row = Rectangle::new(Point::new(0, y as i32), slice_size);
                             let colors = colors.by_ref().map(map_color);
@@ -328,7 +328,7 @@ where
                 let fallback_color = C::from(Rgb888::BLACK);
                 if let Some(color_table) = self.raw_bmp.color_table() {
                     if header.compression_method == CompressionMethod::Rle8 {
-                        let (mut colors, _points) = Rle8Colors::new(&self.raw_bmp);
+                        let mut colors = Rle8Colors::new(&self.raw_bmp);
                         let map_color = |color: RawU8| {
                             color_table
                                 .get(color.into_inner() as u32)
@@ -337,7 +337,7 @@ where
                         };
                         // RLE produces pixels in bottom-up order, so we draw them line by line rather than the entire bitmap at once.
                         for y in (0..area.size.height).rev() {
-                            colors.start_a_line();
+                            colors.start_row();
 
                             let row = Rectangle::new(Point::new(0, y as i32), slice_size);
                             let colors = colors.by_ref().map(map_color);

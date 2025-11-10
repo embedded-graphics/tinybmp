@@ -28,7 +28,7 @@ where
     RawDataSlice<'a, R, LittleEndian>: IntoIterator<Item = R>,
 {
     /// Create a new raw color iterator.
-    pub fn new(raw_bmp: &'a RawBmp<'a>) -> Self {
+    pub(crate) fn new(raw_bmp: &'a RawBmp<'a>) -> Self {
         let header = raw_bmp.header();
 
         let width = header.image_size.width as usize;
@@ -62,24 +62,25 @@ where
     }
 }
 
-/// Iterator over dynamic color. Positions are dependent on the row order.
-#[allow(missing_debug_implementations)]
+/// Iterator over the raw colors in the image.
+///
+/// See [`RawBmp::colors`](RawBmp::colors) for more information.
 pub enum DynamicRawColors<'a> {
     /// 1 bit per pixel
     Bpp1(RawColors<'a, RawU1>),
-    /// 4 bit per pixel
+    /// 4 bits per pixel
     Bpp4(RawColors<'a, RawU4>),
-    /// 8 bit per pixel
+    /// 8 bits per pixel
     Bpp8(RawColors<'a, RawU8>),
-    /// 16 bit per pixel
+    /// 16 bits per pixel
     Bpp16(RawColors<'a, RawU16>),
-    /// 24 bit per pixel
+    /// 24 bits per pixel
     Bpp24(RawColors<'a, RawU24>),
-    /// 32 bit per pixel
+    /// 32 bits per pixel
     Bpp32(RawColors<'a, RawU32>),
-    /// 4 bit per pixel RLE encoded
+    /// RLE encoded with 4 bits per pixel
     Bpp4Rle(Rle4Colors<'a>),
-    /// 8 bit per pixel RLE encoded
+    /// RLE encoded with 8 bits per pixel
     Bpp8Rle(Rle8Colors<'a>),
 }
 
@@ -102,13 +103,14 @@ impl DynamicRawColors<'_> {
     /// Get the row order of the bitmap.
     pub fn row_order(&self) -> RowOrder {
         match self {
-            DynamicRawColors::Bpp1(_)
-            | DynamicRawColors::Bpp4(_)
-            | DynamicRawColors::Bpp8(_)
-            | DynamicRawColors::Bpp16(_)
-            | DynamicRawColors::Bpp24(_)
-            | DynamicRawColors::Bpp32(_) => RowOrder::TopDown,
-            DynamicRawColors::Bpp4Rle(_) | DynamicRawColors::Bpp8Rle(_) => RowOrder::BottomUp,
+            DynamicRawColors::Bpp1(colors) => colors.row_order,
+            DynamicRawColors::Bpp4(colors) => colors.row_order,
+            DynamicRawColors::Bpp8(colors) => colors.row_order,
+            DynamicRawColors::Bpp16(colors) => colors.row_order,
+            DynamicRawColors::Bpp24(colors) => colors.row_order,
+            DynamicRawColors::Bpp32(colors) => colors.row_order,
+            DynamicRawColors::Bpp4Rle(_) => RowOrder::BottomUp,
+            DynamicRawColors::Bpp8Rle(_) => RowOrder::BottomUp,
         }
     }
 }
@@ -124,8 +126,8 @@ impl Iterator for DynamicRawColors<'_> {
             DynamicRawColors::Bpp16(colors) => colors.next().map(|r| u32::from(r.into_inner())),
             DynamicRawColors::Bpp24(colors) => colors.next().map(|r| r.into_inner()),
             DynamicRawColors::Bpp32(colors) => colors.next().map(|r| r.into_inner()),
-            DynamicRawColors::Bpp4Rle(state) => state.next().map(|r| u32::from(r.into_inner())),
-            DynamicRawColors::Bpp8Rle(state) => state.next().map(|r| u32::from(r.into_inner())),
+            DynamicRawColors::Bpp4Rle(colors) => colors.next().map(|r| u32::from(r.into_inner())),
+            DynamicRawColors::Bpp8Rle(colors) => colors.next().map(|r| u32::from(r.into_inner())),
         }
     }
 }
@@ -152,10 +154,43 @@ enum RleState {
 }
 
 pub struct PixelPoints {
-    /// The location of the next pixel
+    /// The location of the next pixel.
     next_pixel: Point,
-    /// The width of a line in pixels
+    /// The number of pixels in a row.
     width: u32,
+    /// Delta for row movement.
+    delta_y: i32,
+}
+
+impl PixelPoints {
+    pub(crate) fn new(image_size: Size, row_order: RowOrder) -> Self {
+        let next_pixel = match row_order {
+            RowOrder::TopDown => Point::new(0, 0),
+            RowOrder::BottomUp => Point::new(0, (image_size.height - 1) as i32),
+        };
+        let delta_y = match row_order {
+            RowOrder::TopDown => 1,
+            RowOrder::BottomUp => -1,
+        };
+        Self {
+            next_pixel,
+            width: image_size.width,
+            delta_y,
+        }
+    }
+}
+
+impl Iterator for PixelPoints {
+    type Item = Point;
+    fn next(&mut self) -> Option<Self::Item> {
+        let old_position = self.next_pixel;
+        self.next_pixel.x += 1;
+        if self.next_pixel.x == self.width as i32 {
+            self.next_pixel.x = 0;
+            self.next_pixel.y += self.delta_y;
+        }
+        Some(old_position)
+    }
 }
 
 /// Iterator over individual BMP RLE8 encoded pixels.
@@ -167,51 +202,22 @@ pub struct Rle8Colors<'a> {
     data: &'a [u8],
     /// Our state
     rle_state: RleState,
-    start_of_line: bool,
-}
-
-impl PixelPoints {
-    fn next_up_dir(&mut self) -> Point {
-        let old_position = self.next_pixel;
-        self.next_pixel.x += 1;
-        if self.next_pixel.x == self.width as i32 {
-            self.next_pixel.x = 0;
-            self.next_pixel.y = self.next_pixel.y.saturating_sub(1);
-        }
-        old_position
-    }
-
-    fn next_down_dir(&mut self) -> Point {
-        let old_position = self.next_pixel;
-        self.next_pixel.x += 1;
-        if self.next_pixel.x == self.width as i32 {
-            self.next_pixel.x = 0;
-            self.next_pixel.y += 1;
-        }
-        old_position
-    }
+    start_of_row: bool,
 }
 
 impl<'a> Rle8Colors<'a> {
     /// Create a new RLE pixel iterator.
-    pub(crate) fn new(raw_bmp: &RawBmp<'a>) -> (Rle8Colors<'a>, PixelPoints) {
-        let header = raw_bmp.header();
-        let points = PixelPoints {
-            width: header.image_size.width,
-            // RLE encoded bitmaps are upside down
-            next_pixel: Point::new(0, (header.image_size.height - 1) as i32),
-        };
-        let this = Rle8Colors {
+    pub(crate) fn new(raw_bmp: &RawBmp<'a>) -> Rle8Colors<'a> {
+        Rle8Colors {
             data: raw_bmp.image_data(),
             rle_state: RleState::Starting,
-            start_of_line: false,
-        };
-        (this, points)
+            start_of_row: false,
+        }
     }
 
     /// Indicate that a new line is starting. Required for correct RLE decoding.
-    pub fn start_a_line(&mut self) {
-        self.start_of_line = true;
+    pub fn start_row(&mut self) {
+        self.start_of_row = true;
     }
 }
 
@@ -276,7 +282,7 @@ impl<'a> Iterator for Rle8Colors<'a> {
                             // the pair, which can be one of the following values.
                             match param {
                                 0 => {
-                                    if !self.start_of_line {
+                                    if !self.start_of_row {
                                         return None;
                                     }
                                 }
@@ -323,29 +329,22 @@ pub struct Rle4Colors<'a> {
     data: &'a [u8],
     /// Our state
     rle_state: RleState,
-    start_of_line: bool,
+    start_of_row: bool,
 }
 
 impl<'a> Rle4Colors<'a> {
     /// Create a new RLE pixel iterator.
-    pub(crate) fn new(raw_bmp: &RawBmp<'a>) -> (Rle4Colors<'a>, PixelPoints) {
-        let header = raw_bmp.header();
-        let points = PixelPoints {
-            width: header.image_size.width,
-            // RLE encoded bitmaps are upside down
-            next_pixel: Point::new(0, (header.image_size.height - 1) as i32),
-        };
-        let this = Rle4Colors {
+    pub(crate) fn new(raw_bmp: &RawBmp<'a>) -> Rle4Colors<'a> {
+        Rle4Colors {
             data: raw_bmp.image_data(),
             rle_state: RleState::Starting,
-            start_of_line: false,
-        };
-        (this, points)
+            start_of_row: false,
+        }
     }
 
     /// Indicate that a new line is starting. Required for correct RLE decoding.
-    pub fn start_a_line(&mut self) {
-        self.start_of_line = true;
+    pub fn start_row(&mut self) {
+        self.start_of_row = true;
     }
 }
 
@@ -449,7 +448,7 @@ impl<'a> Iterator for Rle4Colors<'a> {
                             // the pair, which can be one of the following values.
                             match param {
                                 0 => {
-                                    if !self.start_of_line {
+                                    if !self.start_of_row {
                                         return None;
                                     }
                                 }
@@ -502,24 +501,23 @@ impl<'a> RawPixels<'a> {
         let header = raw_bmp.header();
         match header.compression_method {
             CompressionMethod::Rle4 => {
-                let (colors, points) = Rle4Colors::new(raw_bmp);
+                let colors = Rle4Colors::new(raw_bmp);
+                let points = PixelPoints::new(header.image_size, RowOrder::BottomUp);
                 Self {
                     colors: DynamicRawColors::Bpp4Rle(colors),
                     points,
                 }
             }
             CompressionMethod::Rle8 => {
-                let (colors, points) = Rle8Colors::new(raw_bmp);
+                let colors = Rle8Colors::new(raw_bmp);
+                let points = PixelPoints::new(header.image_size, RowOrder::BottomUp);
                 Self {
                     colors: DynamicRawColors::Bpp8Rle(colors),
                     points,
                 }
             }
             CompressionMethod::Rgb | CompressionMethod::Bitfields => {
-                let points = PixelPoints {
-                    width: header.image_size.width,
-                    next_pixel: Point::zero(),
-                };
+                let points = PixelPoints::new(header.image_size, header.row_order);
                 let colors = match header.bpp {
                     Bpp::Bits1 => DynamicRawColors::Bpp1(RawColors::new(raw_bmp)),
                     Bpp::Bits4 => DynamicRawColors::Bpp4(RawColors::new(raw_bmp)),
@@ -539,11 +537,7 @@ impl Iterator for RawPixels<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let color = self.colors.next()?;
-        let position = match self.colors.row_order() {
-            RowOrder::TopDown => self.points.next_down_dir(),
-            RowOrder::BottomUp => self.points.next_up_dir(),
-        };
-
+        let position = self.points.next()?;
         Some(RawPixel { position, color })
     }
 }
