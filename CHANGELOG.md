@@ -10,6 +10,11 @@
 
 - [#50](https://github.com/embedded-graphics/tinybmp/pull/50) Fixed handling of padding bytes in absolute mode for RLE4 compressed files.
 
+### Added
+
+- [#51](https://github.com/embedded-graphics/tinybmp/pull/51) Added `RawBmp::colors` method to iterator of the raw color values in a file.
+- [#51](https://github.com/embedded-graphics/tinybmp/pull/51) Added `DynamicRawColors`, `RawColors`, `Rle4Colors`, and `Rle8Colors` iterators.
+
 ### Changed
 
 - **(breaking)** [#49](https://github.com/embedded-graphics/tinybmp/pull/41) Use 1.81 as the MSRV.

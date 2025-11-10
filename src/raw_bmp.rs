@@ -8,7 +8,7 @@ use embedded_graphics::{
 use crate::{
     color_table::ColorTable,
     header::{Bpp, Header},
-    raw_iter::RawPixels,
+    raw_iter::{DynamicRawColors, RawPixels},
     try_const, ChannelMasks, ParseError, RowOrder,
 };
 
@@ -101,6 +101,15 @@ impl<'a> RawBmp<'a> {
     /// instead.
     pub fn pixels(&self) -> RawPixels<'_> {
         RawPixels::new(self)
+    }
+
+    /// Returns an iterator over the raw colors in the image.
+    ///
+    /// The iterator returns the color value in the order the pixels are stored in the file.
+    /// Use [`row_order`](DynamicRawColors::row_order) to determine the correct
+    /// pixel arrangement.
+    pub fn colors(&self) -> DynamicRawColors<'_> {
+        self.pixels().colors
     }
 
     /// Returns the raw color of a pixel.

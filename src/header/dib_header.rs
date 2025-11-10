@@ -21,7 +21,6 @@ pub struct DibHeader {
     pub compression: CompressionMethod,
     pub image_data_len: u32,
     pub channel_masks: Option<ChannelMasks>,
-    pub header_type: HeaderType,
     pub row_order: RowOrder,
     pub color_table_num_entries: u32,
 }
@@ -105,7 +104,6 @@ impl DibHeader {
         Ok((
             input,
             Self {
-                header_type,
                 image_size: Size::new(image_width.unsigned_abs(), image_height.unsigned_abs()),
                 image_data_len,
                 bpp,
