@@ -205,6 +205,14 @@ impl ChannelMasks {
         blue: 0x0000FF,
         alpha: 0,
     };
+
+    /// Argb888 color masks.
+    pub const ARGB888: Self = Self {
+        red: 0xFF000000,
+        green: 0xFF0000,
+        blue: 0xFF00,
+        alpha: 0xFF,
+    };
 }
 
 /// Describes how the BMP file is compressed.

@@ -220,6 +220,7 @@ pub use raw_iter::{DynamicRawColors, RawColors, RawPixel, RawPixels, Rle4Colors,
 pub struct Bmp<'a, C> {
     raw_bmp: RawBmp<'a>,
     color_type: PhantomData<C>,
+    alpha_bg: Rgb888,
 }
 
 impl<'a, C> Bmp<'a, C>
@@ -236,7 +237,16 @@ where
         Ok(Self {
             raw_bmp,
             color_type: PhantomData,
+            alpha_bg: Rgb888::BLACK,
         })
+    }
+
+    /// If this image contains transparent pixels (pixels with an alpha channel), then blend these
+    /// pixels with the provided color. Note that this will only be used when drawing to a target.
+    /// It will not be applied when querying pixels from the image.
+    pub fn with_alpha_bg<BG: Into<Rgb888>>(mut self, alpha_bg: BG) -> Self {
+        self.alpha_bg = alpha_bg.into();
+        self
     }
 
     /// Returns an iterator over the pixels in this image.
@@ -375,6 +385,37 @@ where
                 RawColors::<RawU32>::new(&self.raw_bmp)
                     .map(|raw| Rgb888::from(RawU24::new(raw.into_inner())).into()),
             ),
+            ColorType::Argb8888 => {
+                target.fill_contiguous(
+                    &area,
+                    RawColors::<RawU32>::new(&self.raw_bmp).map(|raw| {
+                        // integer blending approach from https://stackoverflow.com/a/12016968
+                        let v = raw.into_inner();
+                        let mut alpha = v & 0xFF;
+                        let inv_alpha = 256 - alpha;
+                        alpha += 1;
+                        if alpha == 0 {
+                            // pixel is completely transparent, use bg color
+                            self.alpha_bg
+                        } else if alpha == 255 {
+                            // pixel is completely opaque, just use its color
+                            Rgb888::from(RawU24::new(v >> 8))
+                        } else {
+                            // pixel has transparency, blend with BG color
+                            let col = Rgb888::from(RawU24::new(v >> 8));
+                            Rgb888::new(
+                                ((alpha * col.r() as u32 + inv_alpha * self.alpha_bg.r() as u32)
+                                    >> 8) as u8,
+                                ((alpha * col.g() as u32 + inv_alpha * self.alpha_bg.g() as u32)
+                                    >> 8) as u8,
+                                ((alpha * col.b() as u32 + inv_alpha * self.alpha_bg.b() as u32)
+                                    >> 8) as u8,
+                            )
+                        }
+                        .into()
+                    }),
+                )
+            }
         }
     }
 
@@ -434,6 +475,10 @@ where
                 .raw_bmp
                 .pixel(p)
                 .map(|raw| Rgb888::from(RawU24::from_u32(raw)).into()),
+            ColorType::Argb8888 => self
+                .raw_bmp
+                .pixel(p)
+                .map(|raw| Rgb888::from(RawU24::from_u32(raw >> 8)).into()),
         }
     }
 }
