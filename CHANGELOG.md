@@ -14,12 +14,14 @@
 
 - [#51](https://github.com/embedded-graphics/tinybmp/pull/51) Added `RawBmp::colors` method to iterator of the raw color values in a file.
 - [#51](https://github.com/embedded-graphics/tinybmp/pull/51) Added `DynamicRawColors`, `RawColors`, `Rle4Colors`, and `Rle8Colors` iterators.
+- [#52](https://github.com/embedded-graphics/tinybmp/pull/52) Added `Rle{4,8}Runs`, useful in combination with `fill_solid`.
 
 ### Changed
 
 - **(breaking)** [#49](https://github.com/embedded-graphics/tinybmp/pull/41) Use 1.81 as the MSRV.
 - [#46](https://github.com/embedded-graphics/tinybmp/pull/46) `Bmp::from_slice` is now `const`, so BMPs can be put in `const`s and `static`s.
 - [#47](https://github.com/embedded-graphics/tinybmp/pull/47) Ignore compressed data length on RGB compression method.
+- [#52](https://github.com/embedded-graphics/tinybmp/pull/52) Combined `Rle4Colors` and `Rle8Colors` into a single `RleColors` generic over `Rle{4,8}Runs`.
 
 ## [0.6.0] - 2024-06-11
 
