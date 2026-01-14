@@ -6,6 +6,8 @@
 
 ## [Unreleased] - ReleaseDate
 
+## [0.7.0] - 2026-01-14
+
 ### Fixed
 
 - [#50](https://github.com/embedded-graphics/tinybmp/pull/50) Fixed handling of padding bytes in absolute mode for RLE4 compressed files.
@@ -186,7 +188,8 @@
 - Release `tinybmp` crate to crates.io
 
 <!-- next-url -->
-[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/v0.6.0...HEAD
+[unreleased]: https://github.com/embedded-graphics/tinybmp/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/embedded-graphics/tinybmp/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/embedded-graphics/tinybmp/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/embedded-graphics/tinybmp/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/embedded-graphics/tinybmp/compare/v0.3.3...v0.4.0
