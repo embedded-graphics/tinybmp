@@ -211,7 +211,9 @@ pub use header::CompressionMethod;
 pub use header::{Bpp, ChannelMasks, Header, RowOrder};
 pub use iter::Pixels;
 pub use raw_bmp::RawBmp;
-pub use raw_iter::{DynamicRawColors, RawColors, RawPixel, RawPixels, Rle4Colors, Rle8Colors};
+pub use raw_iter::{
+    DynamicRawColors, RawColors, RawPixel, RawPixels, Rle4Runs, Rle8Runs, RleColors,
+};
 
 /// A BMP-format bitmap.
 ///
@@ -266,7 +268,6 @@ where
         D: DrawTarget<Color = C>,
     {
         let area = self.bounding_box();
-        let slice_size = Size::new(area.size.width, 1);
 
         match self.raw_bmp.color_type {
             ColorType::Index1 => {
@@ -293,20 +294,29 @@ where
                 let fallback_color = C::from(Rgb888::BLACK);
                 if let Some(color_table) = self.raw_bmp.color_table() {
                     if header.compression_method == CompressionMethod::Rle4 {
-                        let mut colors = Rle4Colors::new(&self.raw_bmp);
+                        let mut runs = Rle4Runs::new(&self.raw_bmp);
                         let map_color = |color: RawU4| {
                             color_table
                                 .get(color.into_inner() as u32)
                                 .map(Into::into)
                                 .unwrap_or(fallback_color)
                         };
+
                         // RLE produces pixels in bottom-up order, so we draw them line by line rather than the entire bitmap at once.
                         for y in (0..area.size.height).rev() {
-                            colors.start_row();
+                            runs.start_row();
 
-                            let row = Rectangle::new(Point::new(0, y as i32), slice_size);
-                            let colors = colors.by_ref().map(map_color);
-                            target.fill_contiguous(&row, colors.take(area.size.width as usize))?;
+                            let mut point = Point::new(0, y as i32);
+                            for (raw_color, count) in runs.by_ref() {
+                                let size = Size::new(count as u32, 1);
+                                let color = map_color(raw_color);
+                                target.fill_solid(&Rectangle::new(point, size), color)?;
+                                point.x += count as i32;
+
+                                if point.x >= area.size.width as i32 {
+                                    break;
+                                }
+                            }
                         }
                         Ok(())
                     } else {
@@ -328,20 +338,29 @@ where
                 let fallback_color = C::from(Rgb888::BLACK);
                 if let Some(color_table) = self.raw_bmp.color_table() {
                     if header.compression_method == CompressionMethod::Rle8 {
-                        let mut colors = Rle8Colors::new(&self.raw_bmp);
+                        let mut runs = Rle8Runs::new(&self.raw_bmp);
                         let map_color = |color: RawU8| {
                             color_table
                                 .get(color.into_inner() as u32)
                                 .map(Into::into)
                                 .unwrap_or(fallback_color)
                         };
+
                         // RLE produces pixels in bottom-up order, so we draw them line by line rather than the entire bitmap at once.
                         for y in (0..area.size.height).rev() {
-                            colors.start_row();
+                            runs.start_row();
 
-                            let row = Rectangle::new(Point::new(0, y as i32), slice_size);
-                            let colors = colors.by_ref().map(map_color);
-                            target.fill_contiguous(&row, colors.take(area.size.width as usize))?;
+                            let mut point = Point::new(0, y as i32);
+                            for (raw_color, count) in runs.by_ref() {
+                                let size = Size::new(count as u32, 1);
+                                let color = map_color(raw_color);
+                                target.fill_solid(&Rectangle::new(point, size), color)?;
+                                point.x += count as i32;
+
+                                if point.x >= area.size.width as i32 {
+                                    break;
+                                }
+                            }
                         }
                         Ok(())
                     } else {

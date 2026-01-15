@@ -79,9 +79,9 @@ pub enum DynamicRawColors<'a> {
     /// 32 bits per pixel
     Bpp32(RawColors<'a, RawU32>),
     /// RLE encoded with 4 bits per pixel
-    Bpp4Rle(Rle4Colors<'a>),
+    Bpp4Rle(RleColors<RawU4, Rle4Runs<'a>>),
     /// RLE encoded with 8 bits per pixel
-    Bpp8Rle(Rle8Colors<'a>),
+    Bpp8Rle(RleColors<RawU8, Rle8Runs<'a>>),
 }
 
 impl core::fmt::Debug for DynamicRawColors<'_> {
@@ -193,22 +193,59 @@ impl Iterator for PixelPoints {
     }
 }
 
-/// Iterator over individual BMP RLE8 encoded pixels.
-///
-/// Each pixel is returned as a `u32` regardless of the bit depth of the source image.
+/// Iterator over individual BMP RLE encoded pixels.
 #[derive(Debug)]
-pub struct Rle8Colors<'a> {
-    /// Our source data
+pub struct RleColors<C, I: Iterator<Item = (C, usize)>> {
+    runs: I,
+    run: Option<(C, usize)>,
+}
+
+impl<C, I: Iterator<Item = (C, usize)>> RleColors<C, I> {
+    /// Create a new RLE pixel iterator.
+    pub(crate) fn new(runs: I) -> Self {
+        Self { runs, run: None }
+    }
+
+    /// Get a mutable reference to the underlying runs iterator.
+    pub fn runs(&mut self) -> &mut I {
+        &mut self.runs
+    }
+}
+
+impl<C: Copy, I: Iterator<Item = (C, usize)>> Iterator for RleColors<C, I> {
+    type Item = C;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let (raw, count) = match self.run.as_mut() {
+                Some(run) => run,
+                None => {
+                    self.run = Some(self.runs.next()?);
+                    self.run.as_mut().unwrap()
+                }
+            };
+            if *count > 0 {
+                *count -= 1;
+                return Some(*raw);
+            } else {
+                self.run = None;
+            }
+        }
+    }
+}
+
+/// Iterator over BMP RLE8 runs.
+#[derive(Debug)]
+pub struct Rle8Runs<'a> {
     data: &'a [u8],
-    /// Our state
     rle_state: RleState,
     start_of_row: bool,
 }
 
-impl<'a> Rle8Colors<'a> {
+impl<'a> Rle8Runs<'a> {
     /// Create a new RLE pixel iterator.
-    pub(crate) fn new(raw_bmp: &RawBmp<'a>) -> Rle8Colors<'a> {
-        Rle8Colors {
+    pub(crate) fn new(raw_bmp: &RawBmp<'a>) -> Rle8Runs<'a> {
+        Rle8Runs {
             data: raw_bmp.image_data(),
             rle_state: RleState::Starting,
             start_of_row: false,
@@ -221,15 +258,14 @@ impl<'a> Rle8Colors<'a> {
     }
 }
 
-impl<'a> Iterator for Rle8Colors<'a> {
-    type Item = RawU8;
+impl Iterator for Rle8Runs<'_> {
+    type Item = (RawU8, usize);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             match self.rle_state {
-                RleState::EndOfBitmap => {
-                    return None;
-                }
+                RleState::EndOfBitmap => return None,
+
                 RleState::Absolute {
                     remaining,
                     is_odd,
@@ -250,28 +286,25 @@ impl<'a> Iterator for Rle8Colors<'a> {
                     } else {
                         self.data = self.data.get(1..)?;
                     }
-                    return Some(RawU8::from(value));
+                    return Some((RawU8::from(value), 1));
                 }
                 RleState::Running {
                     remaining,
                     value,
-                    is_odd,
+                    is_odd: _,
                 } => {
-                    if remaining == 0 {
-                        self.rle_state = RleState::Starting;
-                    } else {
-                        self.rle_state = RleState::Running {
-                            remaining: remaining.saturating_sub(1),
-                            value,
-                            is_odd,
-                        };
-                    }
-                    return Some(RawU8::from(value));
+                    // total pixels represented by this run
+                    let total_pixels = (remaining as usize) + 1;
+
+                    // consume whole run
+                    self.rle_state = RleState::Starting;
+
+                    return Some((RawU8::from(value), total_pixels));
                 }
+
                 RleState::Starting => {
-                    let length = *self.data.get(0)?;
-                    let param = *self.data.get(1)?;
-                    self.data = &self.data.get(2..)?;
+                    let (&[length, param], rest) = self.data.split_first_chunk()?;
+                    self.data = rest;
                     match length {
                         0 => {
                             // The first byte of the pair can be set to zero to
@@ -320,11 +353,9 @@ impl<'a> Iterator for Rle8Colors<'a> {
     }
 }
 
-/// Iterator over individual BMP RLE4 encoded pixels.
-///
-/// Each pixel is returned as a `u32` regardless of the bit depth of the source image.
+/// Iterator over BMP RLE4 runs.
 #[derive(Debug)]
-pub struct Rle4Colors<'a> {
+pub struct Rle4Runs<'a> {
     /// Our source data
     data: &'a [u8],
     /// Our state
@@ -332,10 +363,10 @@ pub struct Rle4Colors<'a> {
     start_of_row: bool,
 }
 
-impl<'a> Rle4Colors<'a> {
+impl<'a> Rle4Runs<'a> {
     /// Create a new RLE pixel iterator.
-    pub(crate) fn new(raw_bmp: &RawBmp<'a>) -> Rle4Colors<'a> {
-        Rle4Colors {
+    pub(crate) fn new(raw_bmp: &RawBmp<'a>) -> Rle4Runs<'a> {
+        Rle4Runs {
             data: raw_bmp.image_data(),
             rle_state: RleState::Starting,
             start_of_row: false,
@@ -348,15 +379,13 @@ impl<'a> Rle4Colors<'a> {
     }
 }
 
-impl<'a> Iterator for Rle4Colors<'a> {
-    type Item = RawU4;
+impl<'a> Iterator for Rle4Runs<'a> {
+    type Item = (RawU4, usize);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             match self.rle_state {
-                RleState::EndOfBitmap => {
-                    return None;
-                }
+                RleState::EndOfBitmap => return None,
                 RleState::Absolute {
                     remaining,
                     is_odd,
@@ -398,7 +427,8 @@ impl<'a> Iterator for Rle4Colors<'a> {
                         // remove the padding byte too
                         self.data = self.data.get(1..)?;
                     }
-                    return Some(RawU4::from(nibble_value));
+
+                    return Some((RawU4::from(nibble_value), 1));
                 }
                 RleState::Running {
                     remaining,
@@ -419,25 +449,35 @@ impl<'a> Iterator for Rle4Colors<'a> {
 
                     let remaining_is_odd = (remaining % 2) != 0;
                     let want_left = remaining_is_odd != is_odd;
-
                     let nibble_value = if want_left { value >> 4 } else { value & 0x0F };
 
-                    if remaining == 0 {
-                        self.rle_state = RleState::Starting;
-                    } else {
-                        self.rle_state = RleState::Running {
-                            remaining: remaining.saturating_sub(1),
-                            value,
-                            is_odd,
-                        };
-                    }
+                    // total pixels represented by this run
+                    let total_pixels = (remaining as usize) + 1;
 
-                    return Some(RawU4::from(nibble_value));
+                    let hi = value >> 4;
+                    let lo = value & 0x0F;
+
+                    if hi == lo {
+                        // entire run is a single repeated nibble -> consume whole run
+                        self.rle_state = RleState::Starting;
+                        return Some((RawU4::from(nibble_value), total_pixels));
+                    } else {
+                        // alternating pattern -> only one pixel of this color now
+                        if remaining == 0 {
+                            self.rle_state = RleState::Starting;
+                        } else {
+                            self.rle_state = RleState::Running {
+                                remaining: remaining.saturating_sub(1),
+                                value,
+                                is_odd,
+                            };
+                        }
+                        return Some((RawU4::from(nibble_value), 1));
+                    }
                 }
                 RleState::Starting => {
-                    let length = *self.data.get(0)?;
-                    let param = *self.data.get(1)?;
-                    self.data = &self.data.get(2..)?;
+                    let (&[length, param], rest) = self.data.split_first_chunk()?;
+                    self.data = rest;
                     match length {
                         0 => {
                             // The first byte of the pair can be set to zero to
@@ -452,10 +492,8 @@ impl<'a> Iterator for Rle4Colors<'a> {
                                         return None;
                                     }
                                 }
-                                1 => {
-                                    // End of bitmap
-                                    self.rle_state = RleState::EndOfBitmap;
-                                }
+                                // End of bitmap
+                                1 => self.rle_state = RleState::EndOfBitmap,
                                 2 => {
                                     // Delta encoding is unsupported.
                                     return None;
@@ -501,7 +539,8 @@ impl<'a> RawPixels<'a> {
         let header = raw_bmp.header();
         match header.compression_method {
             CompressionMethod::Rle4 => {
-                let colors = Rle4Colors::new(raw_bmp);
+                let runs = Rle4Runs::new(raw_bmp);
+                let colors = RleColors::new(runs);
                 let points = PixelPoints::new(header.image_size, RowOrder::BottomUp);
                 Self {
                     colors: DynamicRawColors::Bpp4Rle(colors),
@@ -509,7 +548,8 @@ impl<'a> RawPixels<'a> {
                 }
             }
             CompressionMethod::Rle8 => {
-                let colors = Rle8Colors::new(raw_bmp);
+                let runs = Rle8Runs::new(raw_bmp);
+                let colors = RleColors::new(runs);
                 let points = PixelPoints::new(header.image_size, RowOrder::BottomUp);
                 Self {
                     colors: DynamicRawColors::Bpp8Rle(colors),
