@@ -213,7 +213,7 @@ impl<'a> Rle8Colors<'a> {
         Rle8Colors {
             data: raw_bmp.image_data(),
             rle_state: RleState::Starting,
-            start_of_row: false,
+            start_of_row: true,
         }
     }
 
@@ -252,6 +252,7 @@ impl<'a> Iterator for Rle8Colors<'a> {
                     } else {
                         self.data = self.data.get(1..)?;
                     }
+                    self.start_of_row = false;
                     return Some(RawU8::from(value));
                 }
                 RleState::Running {
@@ -268,6 +269,7 @@ impl<'a> Iterator for Rle8Colors<'a> {
                             is_odd,
                         };
                     }
+                    self.start_of_row = false;
                     return Some(RawU8::from(value));
                 }
                 RleState::Starting => {
@@ -284,9 +286,8 @@ impl<'a> Iterator for Rle8Colors<'a> {
                             // the pair, which can be one of the following values.
                             match param {
                                 0 => {
-                                    if !self.start_of_row {
-                                        return None;
-                                    }
+                                    // End of line - move to next row
+                                    self.start_of_row = true;
                                 }
                                 1 => {
                                     // End of bitmap
@@ -340,7 +341,7 @@ impl<'a> Rle4Colors<'a> {
         Rle4Colors {
             data: raw_bmp.image_data(),
             rle_state: RleState::Starting,
-            start_of_row: false,
+            start_of_row: true,
         }
     }
 
@@ -400,6 +401,7 @@ impl<'a> Iterator for Rle4Colors<'a> {
                         // remove the padding byte too
                         self.data = self.data.get(1..)?;
                     }
+                    self.start_of_row = false;
                     return Some(RawU4::from(nibble_value));
                 }
                 RleState::Running {
@@ -434,6 +436,7 @@ impl<'a> Iterator for Rle4Colors<'a> {
                         };
                     }
 
+                    self.start_of_row = false;
                     return Some(RawU4::from(nibble_value));
                 }
                 RleState::Starting => {
@@ -450,9 +453,8 @@ impl<'a> Iterator for Rle4Colors<'a> {
                             // the pair, which can be one of the following values.
                             match param {
                                 0 => {
-                                    if !self.start_of_row {
-                                        return None;
-                                    }
+                                    // End of line - move to next row
+                                    self.start_of_row = true;
                                 }
                                 1 => {
                                     // End of bitmap
