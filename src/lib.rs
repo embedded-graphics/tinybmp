@@ -211,7 +211,10 @@ pub use header::CompressionMethod;
 pub use header::{Bpp, ChannelMasks, Header, RowOrder};
 pub use iter::Pixels;
 pub use raw_bmp::RawBmp;
-pub use raw_iter::{DynamicRawColors, RawColors, RawPixel, RawPixels, Rle4Colors, Rle8Colors};
+pub use raw_iter::{
+    DynamicRawColors, RawColors, RawPixel, RawPixels, Rle4Runs, Rle8Runs, RleColors, RleRun,
+    RleRuns,
+};
 
 /// A BMP-format bitmap.
 ///
@@ -266,7 +269,6 @@ where
         D: DrawTarget<Color = C>,
     {
         let area = self.bounding_box();
-        let slice_size = Size::new(area.size.width, 1);
 
         match self.raw_bmp.color_type {
             ColorType::Index1 => {
@@ -293,22 +295,13 @@ where
                 let fallback_color = C::from(Rgb888::BLACK);
                 if let Some(color_table) = self.raw_bmp.color_table() {
                     if header.compression_method == CompressionMethod::Rle4 {
-                        let mut colors = Rle4Colors::new(&self.raw_bmp);
-                        let map_color = |color: RawU4| {
+                        let runs = Rle4Runs::new(&self.raw_bmp);
+                        draw_rle_runs(target, &area, runs, |color: RawU4| {
                             color_table
                                 .get(color.into_inner() as u32)
                                 .map(Into::into)
                                 .unwrap_or(fallback_color)
-                        };
-                        // RLE produces pixels in bottom-up order, so we draw them line by line rather than the entire bitmap at once.
-                        for y in (0..area.size.height).rev() {
-                            colors.start_row();
-
-                            let row = Rectangle::new(Point::new(0, y as i32), slice_size);
-                            let colors = colors.by_ref().map(map_color);
-                            target.fill_contiguous(&row, colors.take(area.size.width as usize))?;
-                        }
-                        Ok(())
+                        })
                     } else {
                         // If we didn't detect a supported compression method, just intepret it as raw indexed nibbles.
                         let colors = RawColors::<RawU4>::new(&self.raw_bmp).map(|index| {
@@ -328,22 +321,13 @@ where
                 let fallback_color = C::from(Rgb888::BLACK);
                 if let Some(color_table) = self.raw_bmp.color_table() {
                     if header.compression_method == CompressionMethod::Rle8 {
-                        let mut colors = Rle8Colors::new(&self.raw_bmp);
-                        let map_color = |color: RawU8| {
+                        let runs = Rle8Runs::new(&self.raw_bmp);
+                        draw_rle_runs(target, &area, runs, |color: RawU8| {
                             color_table
                                 .get(color.into_inner() as u32)
                                 .map(Into::into)
                                 .unwrap_or(fallback_color)
-                        };
-                        // RLE produces pixels in bottom-up order, so we draw them line by line rather than the entire bitmap at once.
-                        for y in (0..area.size.height).rev() {
-                            colors.start_row();
-
-                            let row = Rectangle::new(Point::new(0, y as i32), slice_size);
-                            let colors = colors.by_ref().map(map_color);
-                            target.fill_contiguous(&row, colors.take(area.size.width as usize))?;
-                        }
-                        Ok(())
+                        })
                     } else {
                         // If we didn't detect a supported compression method, just intepret it as raw indexed bytes.
                         let colors = RawColors::<RawU8>::new(&self.raw_bmp).map(|index| {
@@ -384,6 +368,58 @@ where
     {
         self.draw(&mut target.translated(-area.top_left).clipped(area))
     }
+}
+
+/// Draws the runs of an RLE compressed bitmap row by row.
+///
+/// Solid runs are drawn with `fill_solid`, alternating runs with
+/// `fill_contiguous`. Runs extending past the row width are truncated.
+fn draw_rle_runs<D, R, I>(
+    target: &mut D,
+    area: &Rectangle,
+    mut runs: I,
+    map_color: impl Fn(R) -> D::Color,
+) -> Result<(), D::Error>
+where
+    D: DrawTarget,
+    R: Copy,
+    I: RleRuns<Item = RleRun<R>>,
+{
+    let width = area.size.width as i32;
+
+    // RLE produces pixels in bottom-up order, so we draw them line by line
+    // rather than the entire bitmap at once.
+    for y in (0..area.size.height).rev() {
+        runs.start_row();
+
+        let mut x = 0;
+        for run in runs.by_ref() {
+            let count = run.count() as i32;
+            let visible = (width - x).min(count);
+
+            if visible > 0 {
+                let rect = Rectangle::new(Point::new(x, y as i32), Size::new(visible as u32, 1));
+                match run {
+                    RleRun::Solid { color, .. } => {
+                        target.fill_solid(&rect, map_color(color))?;
+                    }
+                    RleRun::Alternating { colors, .. } => {
+                        let colors = [map_color(colors[0]), map_color(colors[1])];
+                        target
+                            .fill_contiguous(&rect, (0..visible as usize).map(|i| colors[i % 2]))?;
+                    }
+                }
+            }
+
+            x += count;
+        }
+
+        if runs.is_complete() {
+            break;
+        }
+    }
+
+    Ok(())
 }
 
 impl<C> OriginDimensions for Bmp<'_, C>
