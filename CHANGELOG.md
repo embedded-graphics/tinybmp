@@ -9,6 +9,11 @@
 ### Added
 
 - [#55](https://github.com/embedded-graphics/tinybmp/pull/55) Added methods `CompressionMethod::is_compressed` and `Header::bytes_per_row`. The latter is essential information when walking through the bytes yourself.
+- [#52](https://github.com/embedded-graphics/tinybmp/pull/52) Added `RleRun`, `RleRuns`, `Rle4Runs` and `Rle8Runs` for run-based access to RLE compressed pixel data. RLE compressed bitmaps are drawn with one `fill_solid` or `fill_contiguous` call per run, which is significantly faster on draw targets with accelerated fills.
+
+### Changed
+
+- **(breaking)** [#52](https://github.com/embedded-graphics/tinybmp/pull/52) Replaced `Rle4Colors` and `Rle8Colors` with the generic `RleColors` iterator over `Rle4Runs`/`Rle8Runs`.
 
 ### Fixed
 
